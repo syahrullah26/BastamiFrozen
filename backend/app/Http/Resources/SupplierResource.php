@@ -14,6 +14,15 @@ class SupplierResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'information' => [
+                'phone' => $this->phone,
+                'address' => $this->address,
+            ],
+            'purchases' => PurchaseResource::collection($this->whenLoaded('Purchase')),
+            'supplier_payments' => SupplierPaymentResource::collection($this->whenLoaded('SupplierPayment')),
+        ];
     }
 }

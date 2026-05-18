@@ -10,8 +10,7 @@ use Illuminate\Http\JsonResponse;
 // use Illuminate\Http\Request;
 use App\Http\Resources\EmployeeResource;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
-
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 class EmployeeController extends Controller
 {
     /**
@@ -69,7 +68,7 @@ class EmployeeController extends Controller
                 'message' => 'Employee Fetched Successfully',
                 'data' => new EmployeeResource($employee),
             ], 200);
-        } catch (ValidationException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Employee Not Found',
@@ -97,7 +96,7 @@ class EmployeeController extends Controller
                 'message' => 'Employee  ' . $name . ' Updated Successfully',
                 'data' => new EmployeeResource($employee),
             ], 200);
-        } catch (ValidationException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Employee Not Found',
@@ -124,7 +123,7 @@ class EmployeeController extends Controller
                 'status' => true,
                 'message' => 'Employee ' . $name . ' Deleted Successfully',
             ], 200);
-        } catch (ValidationException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Employee Not Found',

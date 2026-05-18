@@ -10,7 +10,7 @@ use Illuminate\Http\JsonResponse;
 // use Illuminate\Http\Request;
 use App\Models\Customer;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class CustomerController extends Controller
 {
@@ -69,7 +69,7 @@ class CustomerController extends Controller
                 'message' => 'Customer Fetched Successfully',
                 'data' => new CustomerResource($customer),
             ], 200);
-        } catch (ValidationException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Customer Not Found',
@@ -97,7 +97,7 @@ class CustomerController extends Controller
                 'message' => 'Customer Updated Successfully',
                 'data' => new CustomerResource($customer),
             ], 200);
-        } catch (ValidationException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Customer Not Found',
@@ -125,7 +125,7 @@ class CustomerController extends Controller
                 'status' => true,
                 'message' => 'Customer ' . $name . ' Deleted Successfully',
             ], 200);
-        } catch (ValidationException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Customer Not Found',
