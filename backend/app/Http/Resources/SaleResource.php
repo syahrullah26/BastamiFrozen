@@ -14,6 +14,20 @@ class SaleResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->id,
+            'customer_id' => $this->customer_id,
+            'customer_name' => $this->whenLoaded('Customer', fn() => $this->Customer->name),
+            'invoice_number' => $this->invoice_number,
+
+            'amount' => [
+                'total_amount' => $this->total_amount,
+                'remaining_bill' => $this->remaining_bill,
+            ],
+            'transaction_date' => $this->transaction_date,
+            'status' => $this->status,
+            'items' => SaleItemResource::collection($this->whenLoaded('SaleItem')),
+            'customer' => new CustomerResource($this->whenLoaded('Customer')),
+        ];
     }
 }

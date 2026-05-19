@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_units', function (Blueprint $table) {
+        Schema::create('customer_payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-            $table->string('unit_name');
-            $table->integer('conversion_factor');
-            $table->decimal('price', 12, 2);
+            $table->foreignId('customer_id')->constrained('customers')->onDelete('cascade');
+            $table->decimal('amount', 12, 2);
+            $table->date('payment_date');
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_units');
+        Schema::dropIfExists('customer_payments');
     }
 };

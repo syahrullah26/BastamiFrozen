@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Employee;
+namespace App\Http\Requests\Sale;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class CreateRequest extends FormRequest
+class UpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,9 +23,12 @@ class CreateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required | max:255 | string',
-            'salary' => 'required | numeric |min:0 ',
-            'status' => 'active'
+            'customer_id'      => 'required|exists:customers,id',
+            'transaction_date' => 'required|date',
+            'items'            => 'required|array|min:1',
+            'items.*.product_id'      => 'required|exists:products,id',
+            'items.*.product_unit_id' => 'required|exists:product_units,id',
+            'items.*.quantity'        => 'required|integer|min:1',
         ];
     }
 }

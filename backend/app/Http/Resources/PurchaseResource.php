@@ -16,10 +16,11 @@ class PurchaseResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'purchase_number' => $this->purchase_number,
+            'invoice_number' => $this->invoice_number,
             'supplier_id' => $this->supplier_id,
-            'date' => $this->date,
+            'transaction_date' => $this->transaction_date,
             'total_amount' => $this->total_amount,
+            'remaining_bill' => $this->remaining_bill,
             'supplier' => new SupplierResource($this->whenLoaded('Supplier')),
             'items' => PurchaseItemResource::collection($this->whenLoaded('PurchaseItem')),
 

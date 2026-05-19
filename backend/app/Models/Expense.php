@@ -14,7 +14,7 @@ class Expense extends Model
         'amount',
         'expense_date',
         'notes',
-        'attendace_id',
+        'attendance_id',
         'supplier_payment_id'
     ];
 

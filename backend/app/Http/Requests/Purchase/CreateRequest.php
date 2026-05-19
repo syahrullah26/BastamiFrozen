@@ -23,20 +23,15 @@ class CreateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'purchase_number' => 'required | unique:purchases,purchase_number',
-            'supplier_id' => 'required | exists:suppliers,id',
-            'total_amount' => 'required | numeric | min:0',
+            'supplier_id'      => 'required|exists:suppliers,id',
+            'transaction_date' => 'required|date',
+            'status'   => 'required|in:paid,unpaid',
 
-            'remaining_bill' => 'required | numeric | min:0',
-            'transaction_date' => 'required | date',
-            'status' => 'required | in:paid,unpaid',
-
-            'items' => 'required | array | min: 1',
-            'items.*.product_id' => 'required | exists:products,id',
-            'items.*.unit_id' => 'required | exists:product_units,id',
-            'items.*.quantity' => 'required | integer | min:1',
-            'items.*.price' => 'required | numeric | min:0',
-            'items.*.subtotal' => 'required | numeric | min:0',
+            'items'                    => 'required|array|min:1',
+            'items.*.product_id'       => 'required|exists:products,id',
+            'items.*.product_unit_id'  => 'required|exists:product_units,id',
+            'items.*.quantity'         => 'required|integer|min:1',
+            'items.*.price'            => 'required|numeric|min:0',
         ];
     }
 }

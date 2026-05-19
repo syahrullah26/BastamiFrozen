@@ -15,14 +15,22 @@ class PurchaseItemResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'purchase_id' => $this->purchase_id,
-            'product_id' => $this->product_id,
-            'quantity' => $this->quantity,
-            'unit_price' => $this->unit_price,
-            'total_price' => $this->total_price,
-            'product' => new ProductResource($this->whenLoaded('Product')),
-            'product_unit' => new ProductUnitResource($this->whenLoaded('ProductUnit')),
+            'id'                => $this->id,
+            'purchase_id'       => $this->purchase_id,
+            'product_id'        => $this->product_id,
+            'product_unit_id'   => $this->product_unit_id,
+
+            'product_name'      => $this->whenLoaded('Product', fn() => $this->Product->name),
+            'product_unit_name' => $this->whenLoaded('ProductUnit', fn() => $this->ProductUnit->unit_name),
+
+            'quantity'          => (int) $this->quantity,
+            'price'             => (float) $this->price,
+            'subtotal'          => (float) $this->subtotal,
+
+            'cost_price'        => (float) $this->cost_price,
+            'remaining_qty'     => (int) $this->remaining_qty,
+            'batch_status'      => $this->remaining_qty <= 0 ? 'habis' : 'tersedia',
+            'product'           => new ProductResource($this->whenLoaded('Product')),
         ];
     }
 }

@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Product\UpdateRequest;
 use App\Http\Requests\Purchase\CreateRequest;
+use App\Http\Requests\Purchase\UpdateRequest as PurchaseUpdateRequest;
 use App\Http\Resources\PurchaseResource;
+use App\Http\Resources\SupplierPaymentResource;
+use App\Models\Product;
+use App\Models\ProductUnit;
 use App\Models\Purchase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 
 class PurchaseController extends Controller
 {
@@ -20,7 +25,7 @@ class PurchaseController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $data = Purchase::with('Supplier', 'PurchaseItem', 'PurchaseItem.Product', 'PurchaseItem.Product.ProductUnit')->latest()->paginate(10);
+            $data = Purchase::with('Supplier', 'PurchaseItem', 'PurchaseItem.Product', 'PurchaseItem.ProductUnit')->latest()->paginate(10);
             return response()->json([
                 'status' => true,
                 'message' => 'Fetch Purchases Successful',
@@ -39,43 +44,80 @@ class PurchaseController extends Controller
      */
     public function store(CreateRequest $request)
     {
-        DB::transaction(function () use ($request) {
-            try {
-                $validated = $request->validated();
+        $purchase = DB::transaction(function () use ($request) {
+            $validated = $request->validated();
+            $invoiceNumber = "ORD/" . date('dmY') . "/" . str_pad(Purchase::count() + 1, 4, '0', STR_PAD_LEFT);
+            $purchase = Purchase::create([
+                'invoice_number'   => $invoiceNumber,
+                'supplier_id'      => $validated['supplier_id'],
+                'transaction_date' => $validated['transaction_date'],
+                'total_amount'     => 0,
+                'remaining_bill'   => 0,
+                'status'           => $validated['status']
+            ]);
 
-                $invoiceNumber = "ORD/" . date('Ymd') . "/" . str_pad(Purchase::count() + 1, 4, '0', STR_PAD_LEFT);
-                $purchase = Purchase::create([
-                    'purchase_number' => $invoiceNumber,
-                    'supplier_id' => $validated['supplier_id'],
-                    'date' => $validated['date'],
-                    'total_amount' => 0,
+            $totalAmount = 0;
+            foreach ($validated['items'] as $item) {
+                $productUnit = ProductUnit::findOrFail($item['product_unit_id']);
+                $calculatedStock = $item['quantity'] * $productUnit->conversion_factor;
+                $subtotalItem = $item['quantity'] * $item['price'];
+                $totalAmount += $subtotalItem;
+
+                $costPricePerUnit = $item['price'] / $productUnit->conversion_factor;
+
+                $purchase->PurchaseItem()->create([
+                    'product_id'      => $item['product_id'],
+                    'product_unit_id' => $item['product_unit_id'],
+                    'quantity'        => $item['quantity'],
+                    'price'           => $costPricePerUnit,
+                    'remaining_qty'   => $calculatedStock,
+                    'subtotal'        => $subtotalItem,
                 ]);
-                foreach ($validated['items'] as $item) {
-                    $totalAmount += $item['quantity'] * $item['unit_price'];
-                    $purchase->purchaseItem()->create([
-                        'product_id' => $item['product_id'],
-                        'quantity' => $item['quantity'],
-                        'unit_price' => $item['unit_price'],
-                        'total_price' => $item['quantity'] * $item['unit_price'],
-                    ]);
-                }
-                $purchase->update([
-                    'total_amount' => $totalAmount,
+                $product = Product::findOrFail($productUnit->product_id);
+                $product->update([
+                    'stock' => $product->stock + $calculatedStock,
                 ]);
-                if ($purchase) {
-                    return response()->json([
-                        'status' => true,
-                        'message' => 'Purchase Created Successfully',
-                        'data' => new PurchaseResource($purchase),
-                    ], 201);
-                }
-            } catch (\Exception $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Internal Server Error' . $e->getMessage(),
-                ], 500);
             }
+            $remainingBill = $validated['status'] === 'paid' ? 0 : $totalAmount;
+            $purchase->update([
+                'total_amount'   => $totalAmount,
+                'remaining_bill' => $remainingBill,
+            ]);
+            if ($validated['status'] === 'paid') {
+                $supplier = $purchase->Supplier;
+                $payment = $supplier->SupplierPayment()->create([
+                    'purchase_id'  => $purchase->id,
+                    'amount'       => $totalAmount,
+                    'payment_date' => $validated['transaction_date'],
+                    'notes'        => $request->notes ?? null,
+                ]);
+                $payment->Expense()->create([
+                    'type'         => 'pay_supplier',
+                    'amount'       => $totalAmount,
+                    'expense_date' => $validated['transaction_date'],
+                    'notes'        => $request->notes ?? null,
+                    'attendance_id' => null,
+                    'supplier_payment_id' => $payment->id
+
+                ]);
+            }
+            return $purchase;
         });
+
+        if ($purchase) {
+            $purchase->load(['Supplier', 'PurchaseItem.Product', 'PurchaseItem.ProductUnit', 'Supplier.SupplierPayment.Expense']);
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Purchase Created Successfully',
+                'data'    => new PurchaseResource($purchase),
+            ], 201);
+        }
+
+        return response()->json([
+            'status'  => false,
+            'message' => 'Internal Server Error',
+        ], 500);
     }
 
     /**
@@ -83,68 +125,194 @@ class PurchaseController extends Controller
      */
     public function show(string $id)
     {
-        DB::transaction(function () use ($id) {
-            try {
-                $purchase = Purchase::with('Supplier', 'PurchaseItem', 'PurchaseItem.Product', 'PurchaseItem.Product.ProductUnit')->findOrFail($id);
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Fetch Purchase Successful',
-                    'data' => new PurchaseResource($purchase),
-                ], 200);
-            } catch (ModelNotFoundException $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Purchase Not Found',
-                ], 404);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Internal Server Error' . $e->getMessage(),
-                ], 500);
-            }
-        });
+        try {
+
+            $purchase = Purchase::with([
+                'Supplier',
+                'PurchaseItem.Product',
+                'PurchaseItem.ProductUnit'
+            ])->findOrFail($id);
+            return response()->json([
+                'status'  => true,
+                'message' => 'Fetch Purchase Successful',
+                'data'    => new PurchaseResource($purchase),
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Purchase Not Found',
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('purchase show error : ' . $e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Internal Server Error: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateRequest $request, string $id)
+    public function update(PurchaseUpdateRequest $request, string $id)
     {
-        try {
+        return DB::transaction(function () use ($request, $id) {
             $validated = $request->validated();
-            $purchase = Purchase::findOrFail($id);
-            $purchase->update([
-                'supplier_id' => $validated['supplier_id'],
-                'date' => $validated['date'],
-                'total_amount' => 0,
-            ]);
-            $purchase->PurchaseItem()->delete();
+
+            $purchase = Purchase::with('purchaseItem.product')->findOrFail($id);
+
+            if ($purchase->payment_status === 'paid') {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Nota yang sudah lunas tidak dapat diedit kembali. Silakan lakukan retur atau buat nota baru.'
+                ], 422);
+            }
+
+            foreach ($purchase->purchaseItem as $oldItem) {
+                $productUnit = ProductUnit::findOrFail($oldItem->product_unit_id);
+                $oldCalculatedStock = $oldItem->quantity * $productUnit->conversion_factor;
+
+                if ($oldItem->remaining_qty !== $oldCalculatedStock) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => "Gagal update! Stok dari produk '{$oldItem->product?->name}' pada nota ini sudah ada yang terjual."
+                    ], 422);
+                }
+            }
+
+            foreach ($purchase->purchaseItem as $oldItem) {
+                $productUnit = ProductUnit::findOrFail($oldItem->product_unit_id);
+                $oldCalculatedStock = $oldItem->quantity * $productUnit->conversion_factor;
+
+                $product = $oldItem->product;
+                if ($product) {
+                    $product->update([
+                        'stock' => $product->stock - $oldCalculatedStock
+                    ]);
+                }
+            }
+
+            $purchase->purchaseItem()->delete();
+
+            $totalAmount = 0;
+
             foreach ($validated['items'] as $item) {
-                $totalAmount += $item['quantity'] * $item['unit_price'];
+                $productUnit = ProductUnit::findOrFail($item['product_unit_id']);
+                $calculatedStock = $item['quantity'] * $productUnit->conversion_factor;
+                $subtotalItem = $item['quantity'] * $item['price'];
+                $totalAmount += $subtotalItem;
+
+                $costPricePerUnit = $item['price'] / $productUnit->conversion_factor;
+
                 $purchase->purchaseItem()->create([
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'total_price' => $item['quantity'] * $item['unit_price'],
+                    'product_id'      => $item['product_id'],
+                    'product_unit_id' => $item['product_unit_id'],
+                    'quantity'        => $item['quantity'],
+                    'price'           => $costPricePerUnit,
+                    'remaining_qty'   => $calculatedStock,
+                    'subtotal'        => $subtotalItem,
+                ]);
+
+                $product = Product::findOrFail($productUnit->product_id);
+                $product->update([
+                    'stock' => $product->stock + $calculatedStock
                 ]);
             }
+
             $purchase->update([
-                'total_amount' => $totalAmount,
+                'supplier_id'      => $validated['supplier_id'],
+                'transaction_date' => $validated['transaction_date'],
+                'total_amount'     => $totalAmount,
+                'remaining_bill'   => $totalAmount,
+                'payment_status'   => 'unpaid'
             ]);
+
             return response()->json([
-                'status' => true,
+                'status'  => true,
                 'message' => 'Purchase Updated Successfully',
-                'data' => new PurchaseResource($purchase),
+                'data'    => new PurchaseResource($purchase->load('purchaseItem.product')),
             ], 200);
+        });
+    }
+
+
+    public function paymentSupplier(Request $request, string $id): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'supplier_id'  => 'required|exists:suppliers,id',
+                'amount'       => 'required|numeric|min:1', 
+                'payment_date' => 'required|date',
+                'notes'        => 'nullable|string',
+            ]);
+
+            $paymentData = DB::transaction(function () use ($id, $validated) {
+
+                $purchase = Purchase::findOrFail($id);
+                if ($purchase->payment_status === 'paid' || $purchase->remaining_bill <= 0) {
+                    throw ValidationException::withMessages([
+                        'amount' => 'Nota ini sudah lunas. Tidak dapat melakukan pembayaran kembali.'
+                    ]);
+                }
+                if ($validated['amount'] > $purchase->remaining_bill) {
+                    throw ValidationException::withMessages([
+                        'amount' => "Jumlah pembayaran (Rp " . number_format($validated['amount']) . ") melebihi sisa hutang nota (Rp " . number_format($purchase->remaining_bill) . ")."
+                    ]);
+                }
+
+                $supplier = $purchase->supplier;
+                $payment = $supplier->supplierPayment()->create([
+                    'purchase_id'  => $purchase->id,
+                    'amount'       => $validated['amount'],
+                    'payment_date' => $validated['payment_date'],
+                    'notes'        => $validated['notes'],
+                ]);
+
+                $payment->expense()->create([
+                    'type'                => 'pay_supplier',
+                    'amount'              => $validated['amount'],
+                    'expense_date'        => $validated['payment_date'],
+                    'notes'               => $validated['notes'] ?? "Pembayaran hutang nota {$purchase->invoice_number}",
+                    'attendance_id'       => null,
+                    'supplier_payment_id' => $payment->id
+                ]);
+                $remainingBill = $purchase->remaining_bill - $validated['amount'];
+
+                if ($remainingBill > 0) {
+                    $purchase->update([
+                        'remaining_bill' => $remainingBill,
+                        'status' => 'unpaid',
+                    ]);
+                } else {
+                    $purchase->update([
+                        'remaining_bill' => 0,
+                        'status' => 'paid',
+                    ]);
+                }
+
+                return $payment;
+            });
+            return response()->json([
+                'status'  => true,
+                'message' => 'Supplier Payment Created Successfully',
+                'data'    => new SupplierPaymentResource($paymentData),
+            ], 201);
         } catch (ModelNotFoundException $e) {
             return response()->json([
-                'status' => false,
-                'message' => 'Purchase Not Found',
+                'status'  => false,
+                'message' => 'Data Nota Pembelian atau Supplier Tidak Ditemukan',
             ], 404);
-        } catch (\Exception $e) {
+        } catch (ValidationException $e) {
             return response()->json([
-                'status' => false,
-                'message' => 'Internal Server Error' . $e->getMessage(),
+                'status'  => false,
+                'message' => 'Validation Error',
+                'errors'  => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('supplier payment error : ' . $e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Internal Server Error: ' . $e->getMessage(),
             ], 500);
         }
     }

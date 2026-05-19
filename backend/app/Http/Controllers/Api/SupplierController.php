@@ -86,6 +86,7 @@ class SupplierController extends Controller
             ], 500);
         }
     }
+    
 
     /**
      * Update the specified resource in storage.

@@ -7,10 +7,13 @@ use App\Http\Requests\Employee\CreateRequest;
 use App\Http\Requests\Employee\UpdateRequest;
 use App\Models\Employee;
 use Illuminate\Http\JsonResponse;
-// use Illuminate\Http\Request;
+use Illuminate\Http\Request;
 use App\Http\Resources\EmployeeResource;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
+
 class EmployeeController extends Controller
 {
     /**
@@ -52,6 +55,63 @@ class EmployeeController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Internal Server Error' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function attendance(Request $request, string $id): JsonResponse
+    {
+        try {
+            $employee = Employee::findOrFail($id);
+
+            $validated = $request->validate([
+                'employee_id'    => 'required|exists:employees,id',
+                'attendace_date' => 'required|date',
+                'status'         => 'required|in:present,absent,leave,leave_with_permission',
+                'notes'          => 'nullable|string',
+            ]);
+
+            $attendance = DB::transaction(function () use ($employee, $validated) {
+
+                $attendance = $employee->attendance()->create([
+                    'attendace_date' => $validated['attendace_date'],
+                    'status'         => $validated['status'],
+                    'notes'          => $validated['notes'],
+                ]);
+
+                if ($validated['status'] === 'present') {
+                    $attendance->expense()->create([
+                        'type'                => 'salary',
+                        'amount'              => $employee->salary,
+                        'expense_date'        => $validated['attendace_date'],
+                        'notes'               =>  "Gaji harian atas kehadiran tanggal " . $validated['attendace_date'] . "atas nama " . $employee->name,
+                        'supplier_payment_id' => null
+                    ]);
+                }
+
+                return $attendance;
+            });
+
+            $employee->load(['attendance' => function ($query) use ($validated) {
+                $query->where('attendace_date', $validated['attendace_date']);
+            }]);
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Attendance Created Successfully',
+                'data'    => new EmployeeResource($employee),
+            ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Validation Error',
+                'errors'  => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('employee attendance store error : ' . $e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Internal Server Error: ' . $e->getMessage(),
             ], 500);
         }
     }
