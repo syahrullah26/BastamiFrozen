@@ -21,8 +21,9 @@ class CustomerResource extends JsonResource
                 'location' => $this->location,
                 'phone' => $this->phone,
             ],
+            'remaining_bill' => $this->remaining_bills,
             'sale' => SaleResource::collection($this->whenLoaded('sale')),
-            'customerPayment' => CustomerPaymentResource::collection($this->whenLoaded('customerPayment')),
+            'customer_payment' => CustomerPaymentResource::collection($this->whenLoaded('customerPayment')),
         ];
     }
 }

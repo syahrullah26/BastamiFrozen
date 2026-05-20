@@ -26,4 +26,10 @@ class Supplier extends Model
     {
         return $this->hasMany(SupplierPayment::class);
     }
+
+
+    public function getRemainingBillsAttribute() :float
+    {
+        return (float) $this->Purchase()->where('status', '!=', 'paid')->sum('remaining_bill');
+    }
 }

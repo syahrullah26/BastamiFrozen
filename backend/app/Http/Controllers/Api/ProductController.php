@@ -23,7 +23,7 @@ class ProductController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $data = Product::with('productUnit')->latest()->paginate(10);
+            $data = Product::with('ProductUnit')->latest()->paginate(10);
             return response()->json([
                 'status' => true,
                 'message' => 'Fetch Product Successful',

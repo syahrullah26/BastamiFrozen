@@ -161,7 +161,7 @@ class PurchaseController extends Controller
 
             $purchase = Purchase::with('purchaseItem.product')->findOrFail($id);
 
-            if ($purchase->payment_status === 'paid') {
+            if ($purchase->status === 'paid') {
                 return response()->json([
                     'status'  => false,
                     'message' => 'Nota yang sudah lunas tidak dapat diedit kembali. Silakan lakukan retur atau buat nota baru.'
@@ -224,7 +224,7 @@ class PurchaseController extends Controller
                 'transaction_date' => $validated['transaction_date'],
                 'total_amount'     => $totalAmount,
                 'remaining_bill'   => $totalAmount,
-                'payment_status'   => 'unpaid'
+                'status'   => 'unpaid'
             ]);
 
             return response()->json([
@@ -235,87 +235,6 @@ class PurchaseController extends Controller
         });
     }
 
-
-    public function paymentSupplier(Request $request, string $id): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'supplier_id'  => 'required|exists:suppliers,id',
-                'amount'       => 'required|numeric|min:1', 
-                'payment_date' => 'required|date',
-                'notes'        => 'nullable|string',
-            ]);
-
-            $paymentData = DB::transaction(function () use ($id, $validated) {
-
-                $purchase = Purchase::findOrFail($id);
-                if ($purchase->payment_status === 'paid' || $purchase->remaining_bill <= 0) {
-                    throw ValidationException::withMessages([
-                        'amount' => 'Nota ini sudah lunas. Tidak dapat melakukan pembayaran kembali.'
-                    ]);
-                }
-                if ($validated['amount'] > $purchase->remaining_bill) {
-                    throw ValidationException::withMessages([
-                        'amount' => "Jumlah pembayaran (Rp " . number_format($validated['amount']) . ") melebihi sisa hutang nota (Rp " . number_format($purchase->remaining_bill) . ")."
-                    ]);
-                }
-
-                $supplier = $purchase->supplier;
-                $payment = $supplier->supplierPayment()->create([
-                    'purchase_id'  => $purchase->id,
-                    'amount'       => $validated['amount'],
-                    'payment_date' => $validated['payment_date'],
-                    'notes'        => $validated['notes'],
-                ]);
-
-                $payment->expense()->create([
-                    'type'                => 'pay_supplier',
-                    'amount'              => $validated['amount'],
-                    'expense_date'        => $validated['payment_date'],
-                    'notes'               => $validated['notes'] ?? "Pembayaran hutang nota {$purchase->invoice_number}",
-                    'attendance_id'       => null,
-                    'supplier_payment_id' => $payment->id
-                ]);
-                $remainingBill = $purchase->remaining_bill - $validated['amount'];
-
-                if ($remainingBill > 0) {
-                    $purchase->update([
-                        'remaining_bill' => $remainingBill,
-                        'status' => 'unpaid',
-                    ]);
-                } else {
-                    $purchase->update([
-                        'remaining_bill' => 0,
-                        'status' => 'paid',
-                    ]);
-                }
-
-                return $payment;
-            });
-            return response()->json([
-                'status'  => true,
-                'message' => 'Supplier Payment Created Successfully',
-                'data'    => new SupplierPaymentResource($paymentData),
-            ], 201);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Data Nota Pembelian atau Supplier Tidak Ditemukan',
-            ], 404);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Validation Error',
-                'errors'  => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('supplier payment error : ' . $e->getMessage());
-            return response()->json([
-                'status'  => false,
-                'message' => 'Internal Server Error: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
 
     /**
      * Remove the specified resource from storage.

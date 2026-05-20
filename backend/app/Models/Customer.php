@@ -24,4 +24,9 @@ class Customer extends Model
     {
         return $this->hasMany(CustomerPayment::class);
     }
+
+    public function getRemainingBillsAttribute(): float
+    {
+        return (float) $this->Sale()->where('status', '!=', 'paid')->sum('remaining_bill');
+    }
 }

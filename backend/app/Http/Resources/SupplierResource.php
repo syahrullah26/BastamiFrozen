@@ -21,6 +21,7 @@ class SupplierResource extends JsonResource
                 'phone' => $this->phone,
                 'address' => $this->address,
             ],
+            'remaining_bill' => $this->remaining_bills,
             'purchases' => PurchaseResource::collection($this->whenLoaded('Purchase')),
             'supplier_payments' => SupplierPaymentResource::collection($this->whenLoaded('SupplierPayment')),
         ];

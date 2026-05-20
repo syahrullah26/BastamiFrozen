@@ -186,7 +186,7 @@ class SaleController extends Controller
             $validated = $request->validated();
 
             $sale = DB::transaction(function () use ($validated, $id) {
-                $sale = Sale::with('saleItem.productUnit')->findOrFail($id);
+                $sale = Sale::with('SaleItem.ProductUnit')->findOrFail($id);
 
                 if ($sale->status === 'paid') {
                     throw ValidationException::withMessages([
