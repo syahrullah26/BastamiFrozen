@@ -17,6 +17,7 @@ class ProductResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'image' => $this->image,
             'stock' => $this->stock,
             'units' => ProductUnitResource::collection($this->whenLoaded('ProductUnit')),
         ];

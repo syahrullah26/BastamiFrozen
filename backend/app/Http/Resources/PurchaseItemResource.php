@@ -21,13 +21,14 @@ class PurchaseItemResource extends JsonResource
             'product_unit_id'   => $this->product_unit_id,
 
             'product_name'      => $this->whenLoaded('Product', fn() => $this->Product->name),
+            'product_image'     => $this->whenLoaded('Product', fn() => $this->Product->image),
             'product_unit_name' => $this->whenLoaded('ProductUnit', fn() => $this->ProductUnit->unit_name),
 
             'quantity'          => (int) $this->quantity,
             'price'             => (float) $this->price,
             'subtotal'          => (float) $this->subtotal,
 
-            'cost_price'        => (float) $this->cost_price,
+            'cost_price'        => (float) $this->price * $this->ProductUnit->conversion_factor,
             'remaining_qty'     => (int) $this->remaining_qty,
             'batch_status'      => $this->remaining_qty <= 0 ? 'habis' : 'tersedia',
             'product'           => new ProductResource($this->whenLoaded('Product')),

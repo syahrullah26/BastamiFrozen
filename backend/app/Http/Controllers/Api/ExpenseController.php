@@ -11,6 +11,7 @@ use App\Http\Resources\ExpenseResource;
 use App\Http\Requests\Expense\CreateRequest as ExpenseCreate;
 use App\Http\Requests\Expense\UpdateRequest as ExpenseUpdate;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Carbon;
 
 class ExpenseController extends Controller
 {
@@ -20,14 +21,49 @@ class ExpenseController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $data = Expense::with('Attendance', 'SupplierPayment')->latest()->paginate(10);
+            $query = Expense::with('Attendance', 'SupplierPayment');
+
+            $startDate = Carbon::now()->startOfMonth()->toDateString();
+            $endDate = Carbon::now()->endOfMonth()->toDateString();
+            $monthlyQuery = $query->whereBetween('expense_date', [$startDate, $endDate]);
+            $totalMonthlyExpense = $monthlyQuery->clone()->sum('amount');
+            $totalMonthlySalaryExpense = $monthlyQuery->clone()->where('type', 'salary')->sum('amount');
+            $totalMonthlySupplierExpense = $monthlyQuery->clone()->where('type', 'pay_supplier')->sum('amount');
+
+            $data = $query->latest()->paginate(10);
             return response()->json([
                 'status' => true,
                 'message' => 'Fetch Expenses Successful',
-                'data' => ExpenseResource::collection($data)->response()->getData(true),
+                'data' => ExpenseResource::collection($data)->additional([
+                    'meta' => [
+                        'stats' => [
+                            'total_monthly_expense' => $totalMonthlyExpense,
+                            'total_monthly_salary_expense' => $totalMonthlySalaryExpense,
+                            'total_monthly_supplier_expense' => $totalMonthlySupplierExpense,
+                        ]
+                    ]
+                ])->response()->getData(true),
             ], 200);
         } catch (\Exception $e) {
             Log::error('expense index error : ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Internal Server Error' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getOptions(): JsonResponse
+    {
+        try {
+            $data = Expense::with('Attendance', 'SupplierPayment')->latest()->get();
+            return response()->json([
+                'status' => true,
+                'message' => 'Fetch Expenses Successful',
+                'data' => ExpenseResource::collection($data),
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('expense options error : ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Internal Server Error' . $e->getMessage(),

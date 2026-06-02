@@ -20,6 +20,7 @@ class PurchaseResource extends JsonResource
             'supplier_id' => $this->supplier_id,
             'transaction_date' => $this->transaction_date,
             'total_amount' => $this->total_amount,
+            'status' => $this->status,
             'remaining_bill' => $this->remaining_bill,
             'supplier' => new SupplierResource($this->whenLoaded('Supplier')),
             'items' => PurchaseItemResource::collection($this->whenLoaded('PurchaseItem')),

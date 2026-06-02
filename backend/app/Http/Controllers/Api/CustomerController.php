@@ -20,14 +20,43 @@ class CustomerController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $data = Customer::latest()->paginate(10);
+
+            $query = Customer::with(['sale', 'sale.saleItem', 'customerPayment']);
+            $totalUnpaid = $query->clone()->join('sales', 'customers.id', '=', 'sales.customer_id')->where('sales.status', 'unpaid')->count();
+            $totalRemainingBills = $query->clone()->join('sales', 'customers.id', '=', 'sales.customer_id')->where('sales.status', 'unpaid')->sum('sales.remaining_bill');
+            $data = $query->latest()->paginate(10);
             return response()->json([
                 'status' => true,
                 'message' => 'Fetch Customers Successful',
-                'data' => $data
+                'data' => CustomerResource::collection($data)->additional([
+                    'meta' => [
+                        'stats' => [
+                            'total_unpaid' => $totalUnpaid,
+                            'total_remaining_bills' => $totalRemainingBills,
+                        ]
+                    ]
+                ])->response()->getData(true),
             ], 200);
         } catch (\Exception $e) {
             Log::error('customer index error :' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Internal Server Error' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getOptions(): JsonResponse
+    {
+        try {
+            $data = Customer::latest()->get();
+            return response()->json([
+                'status' => true,
+                'message' => 'Fetch Customers Successful',
+                'data' => CustomerResource::collection($data),
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('customer options error :' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Internal Server Error' . $e->getMessage(),
@@ -63,7 +92,7 @@ class CustomerController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $customer = Customer::withd('sale', 'sale.saleItem', 'customerPayment')->findOrFail($id);
+            $customer = Customer::with(['sale', 'sale.saleItem', 'customerPayment'])->findOrFail($id);
             return response()->json([
                 'status' => true,
                 'message' => 'Customer Fetched Successfully',

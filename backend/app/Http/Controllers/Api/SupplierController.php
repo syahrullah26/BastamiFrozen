@@ -20,14 +20,43 @@ class SupplierController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $data = Supplier::latest()->paginate(10);
+            $query = Supplier::with(['Purchase', 'SupplierPayment']);
+            $data = $query->latest()->paginate(10);
+
+            $totalUnpaid = $query->clone()->join('purchases', 'suppliers.id', '=', 'purchases.supplier_id')->where('purchases.status', 'unpaid')->count();
+            $totalRemainingBill = $query->clone()->join('purchases', 'suppliers.id', '=', 'purchases.supplier_id')->where('purchases.status', 'unpaid')->sum('purchases.remaining_bill');
             return response()->json([
                 'status' => true,
                 'message' => 'Fetch Suppliers Successful',
-                'data' => SupplierResource::collection($data)->response()->getData(true),
+                'data' => SupplierResource::collection($data)->additional([
+                    'meta' => [
+                        'stats' => [
+                            'total_unpaid' => $totalUnpaid,
+                            'total_remaining_bill' => $totalRemainingBill
+                        ]
+                    ]
+                ])->response()->getData(true),
             ]);
         } catch (\Exception $e) {
             Log::error('supplier index error : ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Internal Server Error' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getOptions(): JsonResponse
+    {
+        try {
+            $data = Supplier::latest()->get();
+            return response()->json([
+                'status' => true,
+                'message' => 'Fetch Suppliers Successful',
+                'data' => SupplierResource::collection($data),
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('supplier options error : ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Internal Server Error' . $e->getMessage(),
@@ -86,7 +115,7 @@ class SupplierController extends Controller
             ], 500);
         }
     }
-    
+
 
     /**
      * Update the specified resource in storage.

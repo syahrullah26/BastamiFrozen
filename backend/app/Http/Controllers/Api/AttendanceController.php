@@ -11,6 +11,7 @@ use App\Http\Resources\AttendanceResource;
 use Illuminate\Http\JsonResponse;
 use App\Models\Employee;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 
 
 class AttendanceController extends Controller
@@ -26,14 +27,53 @@ class AttendanceController extends Controller
             if ($request->has('employee_id')) {
                 $query->where('employee_id', $request->employee_id);
             }
+            $startDate = Carbon::now()->startOfMonth()->toDateString();
+            $endDate = Carbon::now()->endOfMonth()->toDateString();
+
+            $monthlyQuery = $query->whereBetween('attendace_date', [$startDate, $endDate]);
+            $totalPresent = $monthlyQuery->clone()->where('status', 'present')->count();
+            $totalAbsent  = $monthlyQuery->clone()->where('status', 'absent')->count();
+            $totalLeave   = $monthlyQuery->clone()->whereIn('status', ['leave', 'leave_with_permission'])->count();
+            $totalSalaryExpense = $monthlyQuery->clone()
+                ->where('attendances.status', 'present')
+                ->join('employees', 'attendances.employee_id', '=', 'employees.id')
+                ->sum('employees.salary');
+
             $attendances = $query->latest('attendace_date')->paginate(15);
             return response()->json([
                 'status'  => true,
                 'message' => 'Attendance list retrieved successfully',
-                'data'    => AttendanceResource::collection($attendances)->response()->getData(true),
+                'data'    => AttendanceResource::collection($attendances)->additional([
+                    'meta' => [
+                        'stats' => [
+                            'total_present' => $totalPresent,
+                            'total_absent' => $totalAbsent,
+                            'total_leave' => $totalLeave,
+                            'total_salary_expense' => $totalSalaryExpense,
+                        ]
+                    ]
+                ])->response()->getData(true),
             ], 200);
         } catch (\Exception $e) {
             Log::error('Attendance index error: ' . $e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Internal Server Error',
+            ], 500);
+        }
+    }
+
+    public function getOptions(): JsonResponse
+    {
+        try {
+            $attendances = Attendance::with('employee')->latest()->get();
+            return response()->json([
+                'status'  => true,
+                'message' => 'Attendance options retrieved successfully',
+                'data'    => AttendanceResource::collection($attendances),
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Attendance options error: ' . $e->getMessage());
             return response()->json([
                 'status'  => false,
                 'message' => 'Internal Server Error',
@@ -110,15 +150,16 @@ class AttendanceController extends Controller
     {
         try {
             $attendance = Attendance::findOrFail($id);
-            $employee = Employee::findOrFail($attendance->employee_id);
-
             $validated = $request->validate([
+                'employee_id'    => 'required|exists:employees,id',
                 'attendace_date' => 'required|date',
                 'status'         => 'required|in:present,absent,leave,leave_with_permission',
                 'notes'          => 'nullable|string',
             ]);
-            if ($validated['attendace_date'] !== $attendance->attendace_date) {
-                $alreadyExists = Attendance::where('employee_id', $attendance->employee_id)
+
+            $employee = Employee::findOrFail($validated['employee_id']);
+            if ($validated['attendace_date'] !== $attendance->attendace_date || $validated['employee_id'] !== $attendance->employee_id) {
+                $alreadyExists = Attendance::where('employee_id', $validated['employee_id'])
                     ->where('attendace_date', $validated['attendace_date'])
                     ->where('id', '!=', $id)
                     ->exists();
@@ -127,12 +168,14 @@ class AttendanceController extends Controller
                     return response()->json([
                         'status'  => false,
                         'message' => 'Validation Error',
-                        'errors'  => ['attendace_date' => ['Karyawan sudah memiliki riwayat absensi di tanggal baru ini.']]
+                        'errors'  => ['attendace_date' => ['Karyawan ini sudah memiliki riwayat absensi di tanggal tersebut.']]
                     ], 422);
                 }
             }
+
             DB::transaction(function () use ($attendance, $employee, $validated) {
                 $attendance->update([
+                    'employee_id'    => $validated['employee_id'],
                     'attendace_date' => $validated['attendace_date'],
                     'status'         => $validated['status'],
                     'notes'          => $validated['notes'],
@@ -152,6 +195,8 @@ class AttendanceController extends Controller
                     $attendance->expense()->delete();
                 }
             });
+
+
             $attendance->load(['employee', 'expense']);
 
             return response()->json([
@@ -170,6 +215,42 @@ class AttendanceController extends Controller
             return response()->json([
                 'status'  => false,
                 'message' => 'Internal Server Error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function show(string $id): JsonResponse
+    {
+        try {
+            $attendance = Attendance::with(['employee', 'expense'])->findOrFail($id);
+            return response()->json([
+                'status'  => true,
+                'message' => 'Attendance retrieved successfully',
+                'data'    => new AttendanceResource($attendance),
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Attendance show error: ' . $e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Internal Server Error',
+            ], 500);
+        }
+    }
+
+    public function destroy(string $id): JsonResponse
+    {
+        try {
+            $attendance = Attendance::findOrFail($id);
+            $attendance->delete();
+            return response()->json([
+                'status'  => true,
+                'message' => 'Attendance deleted successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Attendance destroy error: ' . $e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Internal Server Error',
             ], 500);
         }
     }

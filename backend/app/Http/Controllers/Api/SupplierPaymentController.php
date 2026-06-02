@@ -22,14 +22,41 @@ class SupplierPaymentController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $data = SupplierPayment::with('Supplier', 'Expense')->latest()->paginate(10);
+            $query = SupplierPayment::with('Supplier', 'Expense');
+            $data = $query->latest()->paginate(10);
+
+            $totalCashOutFlow = $query->clone()->sum('amount');
             return response()->json([
                 'status' => true,
                 'message' => 'Fetch Supplier Payments Successful',
-                'data' => SupplierPaymentResource::collection($data)->response()->getData(true),
+                'data' => SupplierPaymentResource::collection($data)->additional([
+                    'meta' => [
+                        'stats' => [
+                            'total_cash_out_flow' => $totalCashOutFlow,
+                        ]
+                    ]
+                ])->response()->getData(true),
             ], 200);
         } catch (\Exception $e) {
             Log::error('supplier payment index error : ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Internal Server Error' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getOptions(): JsonResponse
+    {
+        try {
+            $data = SupplierPayment::with('Supplier', 'Expense')->latest()->get();
+            return response()->json([
+                'status' => true,
+                'message' => 'Fetch Supplier Payments Successful',
+                'data' => SupplierPaymentResource::collection($data),
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('supplier payment options error : ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Internal Server Error' . $e->getMessage(),
@@ -53,11 +80,13 @@ class SupplierPaymentController extends Controller
             $paymentData = DB::transaction(function () use ($validated) {
                 $supplierId = $validated['supplier_id'];
                 $paymentAmount = $validated['amount'];
-                $activePurchases = Purchase::where('supplier_id', $supplierId)
-                    ->where('status', '!=', 'paid')
-                    ->orderBy('transaction_date', 'asc')
-                    ->get();
-                $totalDebt = $activePurchases->sum('remaining_bill');
+                $supplier = Supplier::findOrFail($supplierId);
+                $supplierName = $supplier->name;
+
+                $totalDebt = Purchase::where('supplier_id', $supplierId)
+                    ->where('remaining_bill', '>', 0)
+                    ->sum('remaining_bill');
+
                 if ($totalDebt <= 0) {
                     throw ValidationException::withMessages([
                         'amount' => 'Supplier ini tidak memiliki sisa hutang yang perlu dibayar.'
@@ -69,6 +98,12 @@ class SupplierPaymentController extends Controller
                         'amount' => "Jumlah pembayaran (Rp " . number_format($paymentAmount) . ") melebihi total akumulasi hutang supplier (Rp " . number_format($totalDebt) . ")."
                     ]);
                 }
+
+                $activePurchases = Purchase::where('supplier_id', $supplierId)
+                    ->where('remaining_bill', '>', 0)
+                    ->orderBy('id', 'asc')
+                    ->get();
+
                 $payment = SupplierPayment::create([
                     'supplier_id'  => $supplierId,
                     'amount'       => $paymentAmount,
@@ -80,8 +115,9 @@ class SupplierPaymentController extends Controller
                     'type'         => 'pay_supplier',
                     'amount'       => $paymentAmount,
                     'expense_date' => $validated['payment_date'],
-                    'notes'        => $validated['notes'] ?? "Pembayaran hutang FIFO ke Supplier ID: {$supplierId}",
+                    'notes'        => $validated['notes'] ?? "Pembayaran hutang FIFO ke Supplier Name: {$supplierName}",
                 ]);
+
                 $moneyLeft = $paymentAmount;
                 foreach ($activePurchases as $purchase) {
                     if ($moneyLeft <= 0) break;
@@ -162,46 +198,32 @@ class SupplierPaymentController extends Controller
 
             $updatedPayment = DB::transaction(function () use ($validated, $id) {
                 $payment = SupplierPayment::findOrFail($id);
-                $oldAmount = $payment->amount;
-                $newAmount = $validated['amount'];
                 $supplierId = $validated['supplier_id'];
+                $supplier = Supplier::findOrFail($supplierId);
+                $supplierName = $supplier->name;
+                $newAmount = $validated['amount'];
 
-                $purchasesToRollback = Purchase::where('supplier_id', $supplierId)
-                    ->whereIn('status', ['unpaid', 'paid'])
-                    ->orderBy('created_at', 'desc')
-                    ->get();
+                $allPurchases = Purchase::where('supplier_id', $supplierId)->get();
+                foreach ($allPurchases as $purchase) {
+                    $originalAmount = $purchase->total_amount ?? $purchase->total_bill ?? 0;
 
-                $rollbackLeft = $oldAmount;
-                foreach ($purchasesToRollback as $purchase) {
-                    if ($rollbackLeft <= 0) break;
-                    $maxRestorable = $purchase->total_bill - $purchase->remaining_bill;
-
-                    if ($maxRestorable > 0) {
-                        $restoreAmount = min($rollbackLeft, $maxRestorable);
-                        $purchase->remaining_bill += $restoreAmount;
-
-                        $purchase->status = $purchase->remaining_bill >= $purchase->total_bill ? 'unpaid' : 'unpaid';
-                        $purchase->save();
-
-                        $rollbackLeft -= $restoreAmount;
-                    }
-                }
-                $totalCurrentDebt = Purchase::where('supplier_id', $supplierId)
-                    ->where('status', '!=', 'paid')
-                    ->sum('remaining_bill');
-
-                if ($newAmount > $totalCurrentDebt) {
-                    throw ValidationException::withMessages([
-                        'amount' => "Nominal edit (Rp " . number_format($newAmount) . ") melebihi sisa akumulasi seluruh hutang supplier (Rp " . number_format($totalCurrentDebt) . ")."
+                    $purchase->update([
+                        'remaining_bill' => $originalAmount,
+                        'status'         => $originalAmount > 0 ? 'unpaid' : 'paid'
                     ]);
                 }
-                $activePurchases = Purchase::where('supplier_id', $supplierId)
-                    ->where('status', '!=', 'paid')
-                    ->orderBy('created_at', 'asc')
+
+                $otherPayments = SupplierPayment::where('supplier_id', $supplierId)
+                    ->where('id', '!=', $id)
+                    ->orderBy('id', 'asc')
+                    ->get();
+                $totalMoneyToAllocate = $otherPayments->sum('amount') + $newAmount;
+                $purchasesToPay = Purchase::where('supplier_id', $supplierId)
+                    ->orderBy('id', 'asc')
                     ->get();
 
-                $moneyLeft = $newAmount;
-                foreach ($activePurchases as $purchase) {
+                $moneyLeft = $totalMoneyToAllocate;
+                foreach ($purchasesToPay as $purchase) {
                     if ($moneyLeft <= 0) break;
 
                     $currentRemainingBill = $purchase->remaining_bill;
@@ -226,11 +248,12 @@ class SupplierPaymentController extends Controller
                     'payment_date' => $validated['payment_date'],
                     'notes'        => $validated['notes'],
                 ]);
+
                 if ($payment->expense) {
                     $payment->expense->update([
                         'amount'       => $newAmount,
                         'expense_date' => $validated['payment_date'],
-                        'notes'        => $validated['notes'] ?? "Update Pembayaran FIFO ke Supplier ID: {$supplierId}",
+                        'notes'        => $validated['notes'] ?? "Update Pembayaran FIFO ke Supplier Name: {$supplierName}",
                     ]);
                 }
 
@@ -239,7 +262,7 @@ class SupplierPaymentController extends Controller
 
             return response()->json([
                 'status'  => true,
-                'message' => 'Supplier Payment (FIFO) Updated Successfully',
+                'message' => 'Supplier Payment (FIFO) Reset & Updated Successfully',
                 'data'    => new SupplierPaymentResource($updatedPayment),
             ], 200);
         } catch (ModelNotFoundException $e) {
@@ -251,7 +274,6 @@ class SupplierPaymentController extends Controller
             return response()->json(['status' => false, 'message' => 'Internal Server Error: ' . $e->getMessage()], 500);
         }
     }
-
     /**
      * Remove the specified resource from storage.
      */

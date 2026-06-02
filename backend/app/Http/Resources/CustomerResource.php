@@ -17,10 +17,8 @@ class CustomerResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'informations' => [
-                'location' => $this->location,
-                'phone' => $this->phone,
-            ],
+            'location' => $this->location,
+            'phone' => $this->phone,
             'remaining_bill' => $this->remaining_bills,
             'sale' => SaleResource::collection($this->whenLoaded('sale')),
             'customer_payment' => CustomerPaymentResource::collection($this->whenLoaded('customerPayment')),

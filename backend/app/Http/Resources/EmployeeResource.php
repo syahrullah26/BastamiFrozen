@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Expense;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,7 +19,9 @@ class EmployeeResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'salary' => $this->salary,
+            'status' => $this->status,
             'attendance' => AttendanceResource::collection($this->whenLoaded('Attendance')),
+            'expense' => ExpenseResource::collection($this->whenLoaded('Expense')),
         ];
     }
 }

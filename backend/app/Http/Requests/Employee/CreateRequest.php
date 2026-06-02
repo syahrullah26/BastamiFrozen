@@ -25,7 +25,7 @@ class CreateRequest extends FormRequest
         return [
             'name' => 'required | max:255 | string',
             'salary' => 'required | numeric |min:0 ',
-            'status' => 'active'
+            'status' => 'required|in:active,inactive',
         ];
     }
 }

@@ -28,6 +28,7 @@ class UpdateRequest extends FormRequest
         $productUnitId = ProductUnit::where('product_id', $productId)->value('id');
         return [
             'name' => 'required | max:255 | string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:8192',
             'stock' => 'required | integer |min:0 ',
 
             'units' => 'required | array | min: 1',

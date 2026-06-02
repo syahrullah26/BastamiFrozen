@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Carbon;
 
 class PurchaseController extends Controller
 {
@@ -25,11 +26,57 @@ class PurchaseController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $data = Purchase::with('Supplier', 'PurchaseItem', 'PurchaseItem.Product', 'PurchaseItem.ProductUnit')->latest()->paginate(10);
+            $query = Purchase::with([
+                'Supplier',
+                'PurchaseItem',
+                'PurchaseItem.Product',
+                'PurchaseItem.ProductUnit'
+            ]);
+
+            $startDate = Carbon::now()->startOfMonth()->toDateString();
+            $endDate = Carbon::now()->endOfMonth()->toDateString();
+            $monthlyQuery = $query->whereBetween('transaction_date', [$startDate, $endDate]);
+            $totalMonthlyPurchase = $monthlyQuery->count();
+            $totalPendingPurchase = $query->clone()->where('status', 'unpaid')->count();
+            $totalMonthlyPaidPurchase = $monthlyQuery->clone()->where('status', 'paid')->count();
+            $totalRemainingBill = $query->clone()->sum('remaining_bill');
+
+            $data = $query->latest()->paginate(10);
             return response()->json([
                 'status' => true,
                 'message' => 'Fetch Purchases Successful',
-                'data' => PurchaseResource::collection($data)->response()->getData(true),
+                'data' => PurchaseResource::collection($data)->additional([
+                    'meta' => [
+                        'stats' => [
+                            'total_monthly_purchase' => $totalMonthlyPurchase,
+                            'total_pending_purchase' => $totalPendingPurchase,
+                            'total_monthly_paid_purchase' => $totalMonthlyPaidPurchase,
+                            'total_remaining_bill' => $totalRemainingBill,
+                        ]
+                    ]
+                ])->response()->getData(true),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Internal Server Error' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getOptions(): JsonResponse
+    {
+        try {
+            $data = Purchase::with([
+                'Supplier',
+                'PurchaseItem',
+                'PurchaseItem.Product',
+                'PurchaseItem.ProductUnit'
+            ])->latest()->get();
+            return response()->json([
+                'status' => true,
+                'message' => 'Fetch Purchases Successful',
+                'data' => PurchaseResource::collection($data),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -46,7 +93,13 @@ class PurchaseController extends Controller
     {
         $purchase = DB::transaction(function () use ($request) {
             $validated = $request->validated();
-            $invoiceNumber = "ORD/" . date('dmY') . "/" . str_pad(Purchase::count() + 1, 4, '0', STR_PAD_LEFT);
+            $prefix = "ORD/" . date('dmY') . "/";
+            do {
+                $randomSuffix = str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+
+                $invoiceNumber = $prefix . $randomSuffix;
+                $exists = Purchase::where('invoice_number', $invoiceNumber)->exists();
+            } while ($exists);
             $purchase = Purchase::create([
                 'invoice_number'   => $invoiceNumber,
                 'supplier_id'      => $validated['supplier_id'],
@@ -239,27 +292,57 @@ class PurchaseController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
-        DB::transaction(function () use ($id) {
-            try {
-                $purchase = Purchase::findOrFail($id);
-                $purchase->delete();
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Purchase Deleted Successfully',
-                ], 200);
-            } catch (ModelNotFoundException $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Purchase Not Found',
-                ], 404);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Internal Server Error' . $e->getMessage(),
-                ], 500);
+        try {
+            $purchase = Purchase::with(['PurchaseItem'])->findOrFail($id);
+
+            foreach ($purchase->PurchaseItem as $item) {
+                $initialStock = $item->quantity * $item->ProductUnit->conversion_factor;
+
+                if ((float) $item->remaining_qty < $initialStock) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => "Gagal menghapus! Produk '{$item->Product->name}' dari nota ini sudah sebagian terjual ke pelanggan."
+                    ], 422);
+                }
             }
-        });
+
+            if ($purchase->status === 'unpaid' && (float)$purchase->remaining_bill !== (float)$purchase->total_amount) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => "Gagal menghapus! Nota ini memiliki riwayat pembayaran cicilan aktif."
+                ], 422);
+            }
+            DB::transaction(function () use ($purchase) {
+                foreach ($purchase->PurchaseItem as $item) {
+                    $product = $item->Product;
+                    $product->update([
+                        'stock' => $product->stock - $item->remaining_qty
+                    ]);
+                }
+                if ($purchase->status === 'paid') {
+                    $supplierPayments = $purchase->Supplier->SupplierPayment()->where('purchase_id', $purchase->id)->get();
+
+                    foreach ($supplierPayments as $payment) {
+                        $payment->Expense()->delete();
+                        $payment->delete();
+                    }
+                }
+                $purchase->PurchaseItem()->delete();
+                $purchase->delete();
+            });
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Purchase and its financial tracks deleted successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Purchase destroy error: ' . $e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Internal Server Error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

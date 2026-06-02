@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 
+
 class EmployeeController extends Controller
 {
     /**
@@ -22,14 +23,34 @@ class EmployeeController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $data = Employee::latest()->paginate(10);
+            $query = Employee::with(['Attendance', 'Attendance.Expense']);
+            $totalDailySalary = $query->clone()->sum('salary');
+            $data = $query->latest()->paginate(10);
             return response()->json([
                 'status' => true,
                 'message' => 'Fetch Employee Successful',
-                'data' => EmployeeResource::collection($data)->response()->getData(true),
+                'data' => EmployeeResource::collection($data)->additional(['meta' => ['stats' => ['total_daily_salary' => $totalDailySalary]]])->response()->getData(true),
             ], 200);
         } catch (\Exception $e) {
             Log::error('employee index error : ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Internal Server Error' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getOptions(): JsonResponse
+    {
+        try {
+            $data = Employee::latest()->get();
+            return response()->json([
+                'status' => true,
+                'message' => 'Fetch Employee Successful',
+                'data' => EmployeeResource::collection($data),
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('employee options error : ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Internal Server Error' . $e->getMessage(),

@@ -7,12 +7,15 @@ use App\Http\Requests\Product\CreateRequest;
 use App\Http\Requests\Product\UpdateRequest;
 use App\Http\Resources\ProductResource;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+// use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Product;
-use Illuminate\Database\Eloquent\Model;
+// use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 
 class ProductController extends Controller
@@ -38,37 +41,17 @@ class ProductController extends Controller
         }
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(CreateRequest $request): JsonResponse
+    public function getOptions(): JsonResponse
     {
         try {
-            $validated = $request->validated();
-            $product = null;
-            DB::transaction(function () use ($validated, &$product) {
-                $product = Product::create([
-                    'name' => $validated['name'],
-                    'stock' => $validated['stock'],
-                ]);
-
-                if (!empty($validated['units']) && is_array($validated['units'])) {
-                    foreach ($validated['units'] as $unit) {
-                        $product->productUnit()->create([
-                            'unit_name' => $unit['unit_name'],
-                            'conversion_factor' => $unit['conversion_factor'],
-                            'price' => $unit['price'],
-                        ]);
-                    }
-                }
-            });
+            $data = Product::with('ProductUnit')->latest()->get();
             return response()->json([
                 'status' => true,
-                'message' => 'Product Created Successfully',
-                'data' => new ProductResource($product),
-            ], 201);
+                'message' => 'Fetch Product Successful',
+                'data' => ProductResource::collection($data),
+            ], 200);
         } catch (\Exception $e) {
-            Log::error('product store error : ' . $e->getMessage());
+            Log::error('product options error : ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Internal Server Error' . $e->getMessage(),
@@ -77,110 +60,77 @@ class ProductController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Store a newly created resource in storage.
      */
-    public function show(string $id)
-    {
-        DB::transaction(function () use ($id) {
-            try {
-                $product = Product::with('ProductUnit')->findOrFail($id);
-                $productName = $product->name;
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Fetch Product : ' . $productName . ' Successful',
-                    'data' => new ProductResource($product),
-                ], 200);
-            } catch (ModelNotFoundException $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Product Not Found',
-                ], 404);
-            } catch (\Exception $e) {
-                Log::error('product show error : ' . $e->getMessage());
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Internal Server Error' . $e->getMessage(),
-                ], 500);
-            }
-        });
-    }
+    // Hubungkan dengan facade Intervention Image v3
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateRequest $request, string $id)
+    public function store(CreateRequest $request): JsonResponse
     {
-        DB::transaction(function () use ($request, $id) {
-            try {
-                $validated = $request->validated();
-                $product = Product::findOrFail($id);
-                $product->update([
-                    'name' => $validated['name'],
+        try {
+            $validated = $request->validated();
+            $product = null;
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $filename = time() . '_' . uniqid() . '.webp';
+                $manager = new ImageManager(new Driver());
+                $imageWebp = $manager->read($file)->toWebp(80);
+                Storage::disk('public')->put('products/' . $filename, (string) $imageWebp);
+
+                $validated['image'] = 'products/' . $filename;
+            } else {
+                $validated['image'] = null;
+            }
+            $product = DB::transaction(function () use ($validated) {
+                $createdProduct = Product::create([
+                    'name'  => $validated['name'],
+                    'image' => $validated['image'],
                     'stock' => $validated['stock'],
                 ]);
 
-                // if (!empty($validated['units']) && is_array($validated['units'])) {
-                //     foreach ($validated['units'] as $unit) {
-                //         if (isset($unit['id'])) {
-                //             $productUnit = $product->productUnit()->find($unit['id']);
-                //             if ($productUnit) {
-                //                 $productUnit->update([
-                //                     'unit_name' => $unit['unit_name'],
-                //                     'conversion_factor' => $unit['conversion_factor'],
-                //                     'price' => $unit['price'],
-                //                 ]);
-                //             }
-                //         } else {
-                //             $product->productUnit()->create([
-                //                 'unit_name' => $unit['unit_name'],
-                //                 'conversion_factor' => $unit['conversion_factor'],
-                //                 'price' => $unit['price'],
-                //             ]);
-                //         }
-                //     }
-                // }
-                $product->ProductUnit()->delete();
                 if (!empty($validated['units']) && is_array($validated['units'])) {
                     foreach ($validated['units'] as $unit) {
-                        $product->productUnit()->create([
-                            'unit_name' => $unit['unit_name'],
+                        $createdProduct->productUnit()->create([
+                            'unit_name'         => $unit['unit_name'],
                             'conversion_factor' => $unit['conversion_factor'],
-                            'price' => $unit['price'],
+                            'price'             => $unit['price'],
                         ]);
                     }
                 }
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Product Updated Successfully',
-                    'data' => new ProductResource($product->load('ProductUnit')),
-                ], 200);
-            } catch (ModelNotFoundException $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Product Not Found',
-                ], 404);
-            } catch (\Exception $e) {
-                Log::error('product update error : ' . $e->getMessage());
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Internal Server Error' . $e->getMessage(),
-                ], 500);
+                return $createdProduct;
+            });
+            $product->load('productUnit');
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Product Created Successfully',
+                'data'    => new ProductResource($product),
+            ], 201);
+        } catch (\Exception $e) {
+            if (isset($filename) && Storage::disk('public')->exists('products/' . $filename)) {
+                Storage::disk('public')->delete('products/' . $filename);
             }
-        });
+
+            Log::error('product store error : ' . $e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Internal Server Error: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Display the specified resource.
      */
-    public function destroy(string $id)
+    public function show(string $id): JsonResponse
     {
         try {
-            $product = Product::findOrFail($id);
-            $name = $product->name;
-            $product->delete();
+            $product = Product::with('ProductUnit')->findOrFail($id);
+
+            $productName = $product->name;
             return response()->json([
                 'status' => true,
-                'message' => 'Product ' . $name . ' Deleted Successfully',
+                'message' => 'Fetch Product : ' . $productName . ' Successful',
+                'data' => new ProductResource($product),
             ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
@@ -188,10 +138,119 @@ class ProductController extends Controller
                 'message' => 'Product Not Found',
             ], 404);
         } catch (\Exception $e) {
-            Log::error('product destroy error : ' . $e->getMessage());
+            Log::error('product show error : ' . $e->getMessage());
             return response()->json([
                 'status' => false,
-                'message' => 'Internal Server Error' . $e->getMessage(),
+                'message' => 'Internal Server Error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateRequest $request, string $id): JsonResponse
+    {
+        try {
+            $validated = $request->validated();
+            $product = Product::findOrFail($id);
+            $oldImage = $product->image;
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $filename = time() . '_' . uniqid() . '.webp';
+                $manager = new ImageManager(new Driver());
+                $imageWebp = $manager->read($file)->toWebp(80);
+                Storage::disk('public')->put('products/' . $filename, (string) $imageWebp);
+                $validated['image'] = 'products/' . $filename;
+            } else {
+                $validated['image'] = $oldImage;
+            }
+            $product = DB::transaction(function () use ($validated, $product) {
+                $product->update([
+                    'name'  => $validated['name'],
+                    'image' => $validated['image'],
+                    'stock' => $validated['stock'],
+                ]);
+                $product->productUnit()->delete();
+                if (!empty($validated['units']) && is_array($validated['units'])) {
+                    foreach ($validated['units'] as $unit) {
+                        $product->productUnit()->create([
+                            'unit_name'         => $unit['unit_name'],
+                            'conversion_factor' => $unit['conversion_factor'],
+                            'price'             => $unit['price'],
+                        ]);
+                    }
+                }
+
+                return $product;
+            });
+            if ($request->hasFile('image') && $oldImage) {
+                if (Storage::disk('public')->exists($oldImage)) {
+                    Storage::disk('public')->delete($oldImage);
+                }
+            }
+            $product->load('productUnit');
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Product Updated Successfully',
+                'data'    => new ProductResource($product),
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            if (isset($filename) && Storage::disk('public')->exists('products/' . $filename)) {
+                Storage::disk('public')->delete('products/' . $filename);
+            }
+
+            return response()->json([
+                'status'  => false,
+                'message' => 'Product Not Found',
+            ], 404);
+        } catch (\Exception $e) {
+            if (isset($filename) && Storage::disk('public')->exists('products/' . $filename)) {
+                Storage::disk('public')->delete('products/' . $filename);
+            }
+
+            Log::error('product update error : ' . $e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Internal Server Error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id): JsonResponse
+    {
+        try {
+            $product = Product::findOrFail($id);
+            $name = $product->name;
+            $imagePath = $product->image;
+            DB::transaction(function () use ($product) {
+                $product->productUnit()->delete();
+                $product->delete();
+            });
+            if ($imagePath) {
+                if (Storage::disk('public')->exists($imagePath)) {
+                    Storage::disk('public')->delete($imagePath);
+                }
+            }
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Product ' . $name . ' Deleted Successfully',
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Product Not Found',
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('product destroy error : ' . $e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Internal Server Error: ' . $e->getMessage(),
             ], 500);
         }
     }

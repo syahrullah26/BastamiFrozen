@@ -15,6 +15,15 @@ class CreateRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation()
+    {
+        if ($this->has('units') && is_string($this->units)) {
+            $this->merge([
+                'units' => json_decode($this->units, true),
+            ]);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,6 +33,7 @@ class CreateRequest extends FormRequest
     {
         return [
             'name' => 'required | max:255 | string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:8192',
             'stock' => 'required | integer |min:0 ',
 
             'units' => 'required | array | min: 1',

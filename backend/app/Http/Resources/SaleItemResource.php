@@ -19,12 +19,14 @@ class SaleItemResource extends JsonResource
             'sale_id' => $this->sale_id,
             'product_id' => $this->product_id,
             'product_unit_id' => $this->product_unit_id,
+            'product_name' => $this->whenLoaded('Product', fn() => $this->Product->name),
 
             'product' => new ProductResource($this->whenLoaded('Product')),
             'product_unit' => new ProductUnitResource($this->whenLoaded('ProductUnit')),
 
             'quantity' => (int) $this->quantity,
             'unit' => $this->whenLoaded('ProductUnit', fn() => $this->ProductUnit->unit_name),
+            'conversion_factor' => $this->whenLoaded('ProductUnit', fn() => $this->ProductUnit->conversion_factor),
             'stock_Out' => (float) $this->quantity * $this->ProductUnit->conversion_factor,
             'price' => (float) $this->price,
             'subtotal' => (float) $this->subtotal,
