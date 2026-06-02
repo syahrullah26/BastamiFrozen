@@ -7,14 +7,23 @@ import "aos/dist/aos.css";
 import Cookies from "js-cookie";
 import Sidebar from "@/components/Sidebar";
 
+const subscribeSidebar = (callback: () => void) => {
+  window.addEventListener("sidebarToggle", callback);
+  return () => window.removeEventListener("sidebarToggle", callback);
+};
+const getSnapshot = () => Cookies.get("sidebar_collapsed") === "true";
+const getServerSnapshot = () => false;
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    return Cookies.get("sidebar_collapsed") === "true";
-  });
+  const isCollapsed = React.useSyncExternalStore(
+    subscribeSidebar,
+    getSnapshot,
+    getServerSnapshot,
+  );
 
   useEffect(() => {
     AOS.init({
@@ -23,27 +32,21 @@ export default function DashboardLayout({
       easing: "ease-out-back",
     });
     AOS.refresh();
-    const handleSidebarChange = () => {
-      const currentStatus = Cookies.get("sidebar_collapsed") === "true";
-      setIsCollapsed(currentStatus);
-      setTimeout(() => {
-        AOS.refresh();
-      }, 300);
-    };
-    window.addEventListener("sidebarToggle", handleSidebarChange);
-
-    return () => {
-      window.removeEventListener("sidebarToggle", handleSidebarChange);
-    };
   }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      AOS.refresh();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [isCollapsed]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex transition-colors duration-500">
+    <div className="min-h-screen bg-ghost-white text-foreground flex transition-colors duration-500">
       <Sidebar />
       <div
-        className={`w-full min-h-screen flex flex-col pl-0 transition-all duration-300 layout-content
-          ${isCollapsed ? "lg:pl-20" : "lg:pl-64"}
-        `}
+        className={`w-full min-h-screen flex flex-col pl-0 transition-all duration-300 layout-content ${
+          isCollapsed ? "lg:pl-20" : "lg:pl-64"
+        }`}
       >
         <main className="flex-1 w-full pt-16 lg:pt-0">
           <div className="w-full p-6 lg:p-10">{children}</div>

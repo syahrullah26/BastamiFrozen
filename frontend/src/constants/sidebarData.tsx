@@ -7,6 +7,7 @@ import {
   BadgePercent,
   UserCheck,
   Wallet,
+  Receipt,
   TrendingUp,
 } from "lucide-react";
 
@@ -67,20 +68,26 @@ export const menuGroups = [
         name: "Employees",
         href: "/employees",
         icon: Users,
-        roles: ["admin", "employee"],
+        roles: ["admin"],
       },
       {
-        name: "Attendance",
-        href: "/attendance",
+        name: "Attendance Logs",
+        href: "/attendances",
         icon: UserCheck,
         roles: ["admin"],
       },
-      { name: "Expenses", href: "/expenses", icon: Wallet, roles: ["admin"] }, // ⚠️ Hanya Admin
+      {
+        name: "Payment Logs",
+        href: "/payments",
+        icon: Receipt,
+        roles: ["admin"],
+      },
+      { name: "Expense Logs", href: "/expenses", icon: Wallet, roles: ["admin"] },
       {
         name: "Revenue",
         href: "/revenue",
         icon: TrendingUp,
-        roles: ["admin", "employee"],
+        roles: ["admin"],
       },
     ],
   },

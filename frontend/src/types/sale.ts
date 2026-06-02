@@ -6,10 +6,12 @@ export interface SaleItem {
   sale_id: number;
   product_id: number;
   product_unit_id: number;
+  product_name: string;
   product: Product;
   product_unit: ProductUnit;
   quantity: number;
   unit: string;
+  conversion_factor: number;
   stock_out: number;
   price: number;
   subtotal: number;
@@ -17,6 +19,7 @@ export interface SaleItem {
   gross_profit: number;
 }
 
+export type StatusSale = "paid" | "unpaid";
 export interface Sale {
   id: number;
   customer_id: number;
@@ -27,7 +30,25 @@ export interface Sale {
     remaining_bill: number;
   };
   transaction_date: string;
-  status: string;
+  status: StatusSale;
   items: SaleItem[];
   customer: Customer;
+}
+
+export interface SaleItemRequest {
+  product_id: number;
+  product_unit_id: number;
+  quantity: number;
+}
+export interface SaleRequest {
+  customer_id: number;
+  transaction_date: string;
+  items: SaleItemRequest[];
+}
+
+export interface SaleStats {
+  total_monthly_sale: number;
+  total_monthly_paid_sale: number;
+  total_pending_sale: number;
+  total_remaining_bill: number;
 }

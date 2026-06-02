@@ -14,3 +14,14 @@ export interface Supplier {
   purchases: Purchase[];
   supplier_payments: SupplierPayment[];
 }
+
+export interface SupplierRequest {
+  name: string;
+  phone: string;
+  address: string;
+}
+
+export interface SupplierStats {
+  total_unpaid: number;
+  total_remaining_bill: number;
+}

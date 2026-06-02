@@ -13,6 +13,13 @@ export interface CustomerPayment {
   updated_at: string;
 }
 
+export interface CustomerPaymentStats {
+  total_cash_in_flow: number;
+}
+export interface SupplierPaymentStats {
+  total_cash_out_flow: number;
+}
+
 export interface SupplierPayment {
   id: number;
   supplier_id: number;
@@ -23,4 +30,18 @@ export interface SupplierPayment {
   expense: Expense;
   created_at: string;
   updated_at: string;
+}
+
+export interface SupplierPaymentRequest {
+  supplier_id: number;
+  amount: number;
+  payment_date: string;
+  notes?: string;
+}
+
+export interface CustomerPaymentRequest {
+  customer_id: number;
+  amount: number;
+  payment_date: string;
+  notes?: string;
 }

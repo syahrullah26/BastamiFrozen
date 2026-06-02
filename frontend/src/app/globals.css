@@ -8,7 +8,10 @@
   --brand-dark: #002b5b;
   --tertiary-brand: #4b0082;
   --brand-neutral: #76777b;
-  --surface: #D6E3FF;
+  --surface: #d6e3ff;
+  --ghost-white: #f8f8ff;
+  --snow-white: #fffafa;
+  --ivory-white: #fffff0;
 }
 
 @theme inline {
@@ -19,9 +22,12 @@
   --color-brand-dark: var(--brand-dark);
   --color-tertiary-brand: var(--tertiary-brand);
   --color-brand-neutral: var(--brand-neutral);
+  --color-ghost-white: var(--ghost-white);
+  --color-snow-white: var(--snow-white);
   --color-surface: var(--surface);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-ivory-white: var(--ivory-white);
 }
 
 body {
