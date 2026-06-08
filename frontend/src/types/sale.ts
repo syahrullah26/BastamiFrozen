@@ -52,3 +52,7 @@ export interface SaleStats {
   total_pending_sale: number;
   total_remaining_bill: number;
 }
+
+export interface BackfillPayload {
+  product_id?: string | number | null;
+}

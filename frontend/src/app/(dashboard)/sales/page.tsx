@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useMemo,
   useSyncExternalStore,
+  useRef,
 } from "react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -29,7 +30,10 @@ import { formatRupiah } from "@/utils/helper";
 import { SaleColumns } from "@/constants/DataTable/saleData";
 import { SaleForm } from "@/components/ui/form/SaleForm";
 import { BaseModal } from "@/components/ui/modal/BaseModal";
+import SyncHppButton from "@/components/ui/button/SyncHppButton";
 import { CustomerPaymentForm } from "@/components/ui/form/CustomerPaymentForm";
+import { FakturReceipt } from "@/components/ui/print/faktur/FakturReceipt";
+import { useReactToPrint } from "react-to-print";
 
 const emptySubscribe = () => () => {};
 
@@ -58,6 +62,9 @@ export default function SalesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+
+  const printRef = useRef<HTMLDivElement>(null);
+  const [printData, setPrintData] = useState<Sale | null>(null);
 
   const isClient = useSyncExternalStore(
     emptySubscribe,
@@ -115,6 +122,32 @@ export default function SalesPage() {
     setSelectedSale({ id, name });
     setIsDeleteModalOpen(true);
   }, []);
+  const handleTriggerPrintAction = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Faktur-${printData?.invoice_number || "Nota"}`,
+  });
+
+  const handlePrintClick = useCallback(
+    async (id: number) => {
+      const toastId = toast.loading(
+        "Mengambil detail transaksi untuk dicetak...",
+      );
+      try {
+        const response = await SaleService.getSale(id);
+        setPrintData(response);
+
+        toast.dismiss(toastId);
+
+        setTimeout(() => {
+          handleTriggerPrintAction();
+        }, 150);
+      } catch (error) {
+        console.error(error);
+        toast.error("Terjadi kesalahan sistem print", { id: toastId });
+      }
+    },
+    [handleTriggerPrintAction],
+  );
 
   const handleSuccess = () => loadData();
 
@@ -191,8 +224,8 @@ export default function SalesPage() {
   }, [sales, search]);
 
   const columns = useMemo(
-    () => SaleColumns(handleDeleteClick),
-    [handleDeleteClick],
+    () => SaleColumns(handleDeleteClick, handlePrintClick),
+    [handleDeleteClick, handlePrintClick],
   );
 
   return (
@@ -272,7 +305,9 @@ export default function SalesPage() {
       <div className="grid grid-cols-1 gap-4 md:gap-8">
         <StatsCard
           title="Remaining Bills"
-          value={isClient ? formatRupiah(saleStats.total_remaining_bill) : "Rp 0"}
+          value={
+            isClient ? formatRupiah(saleStats.total_remaining_bill) : "Rp 0"
+          }
           icon={<DollarSign className="w-6 h-6" />}
           iconBgColor="bg-primary-brand/10"
           iconColor="text-primary-brand"
@@ -284,6 +319,7 @@ export default function SalesPage() {
             <button className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-all border border-zinc-200/50 dark:border-white/10 cursor-pointer">
               <Filter className="w-4 h-4" /> Filter
             </button>
+            <SyncHppButton onSuccess={loadData} />
             <div className="h-6 w-px bg-zinc-200 dark:bg-white/10 mx-1" />
           </div>
 
@@ -329,6 +365,7 @@ export default function SalesPage() {
           }}
         />
       </div>
+      <FakturReceipt ref={printRef} data={printData} />
     </div>
   );
 }

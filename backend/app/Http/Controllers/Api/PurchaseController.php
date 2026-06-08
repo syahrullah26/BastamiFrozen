@@ -26,7 +26,8 @@ class PurchaseController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $query = Purchase::with([
+
+            $baseQuery = Purchase::with([
                 'Supplier',
                 'PurchaseItem',
                 'PurchaseItem.Product',
@@ -35,31 +36,44 @@ class PurchaseController extends Controller
 
             $startDate = Carbon::now()->startOfMonth()->toDateString();
             $endDate = Carbon::now()->endOfMonth()->toDateString();
-            $monthlyQuery = $query->whereBetween('transaction_date', [$startDate, $endDate]);
-            $totalMonthlyPurchase = $monthlyQuery->count();
-            $totalPendingPurchase = $query->clone()->where('status', 'unpaid')->count();
-            $totalMonthlyPaidPurchase = $monthlyQuery->clone()->where('status', 'paid')->count();
-            $totalRemainingBill = $query->clone()->sum('remaining_bill');
 
-            $data = $query->latest()->paginate(10);
+            $totalMonthlyPurchase = $baseQuery->clone()
+                ->whereBetween('transaction_date', [$startDate, $endDate])
+                ->count();
+
+            $totalMonthlyPaidPurchase = $baseQuery->clone()
+                ->whereBetween('transaction_date', [$startDate, $endDate])
+                ->where('status', 'paid')
+                ->count();
+
+            $totalPendingPurchase = $baseQuery->clone()
+                ->where('status', 'unpaid')
+                ->count();
+
+            $totalRemainingBill = $baseQuery->clone()
+                ->sum('remaining_bill');
+
+            $data = $baseQuery->latest()->paginate(10);
+            // $data = $baseQuery->whereBetween('transaction_date', [$startDate, $endDate])->latest()->paginate(10);
+
             return response()->json([
-                'status' => true,
+                'status'  => true,
                 'message' => 'Fetch Purchases Successful',
-                'data' => PurchaseResource::collection($data)->additional([
+                'data'    => PurchaseResource::collection($data)->additional([
                     'meta' => [
                         'stats' => [
-                            'total_monthly_purchase' => $totalMonthlyPurchase,
-                            'total_pending_purchase' => $totalPendingPurchase,
+                            'total_monthly_purchase'      => $totalMonthlyPurchase,
+                            'total_pending_purchase'      => $totalPendingPurchase,
                             'total_monthly_paid_purchase' => $totalMonthlyPaidPurchase,
-                            'total_remaining_bill' => $totalRemainingBill,
+                            'total_remaining_bill'        => (float) $totalRemainingBill,
                         ]
                     ]
                 ])->response()->getData(true),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
-                'message' => 'Internal Server Error' . $e->getMessage(),
+                'status'  => false,
+                'message' => 'Internal Server Error: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -211,9 +225,7 @@ class PurchaseController extends Controller
     {
         return DB::transaction(function () use ($request, $id) {
             $validated = $request->validated();
-
             $purchase = Purchase::with('purchaseItem.product')->findOrFail($id);
-
             if ($purchase->status === 'paid') {
                 return response()->json([
                     'status'  => false,
@@ -221,17 +233,20 @@ class PurchaseController extends Controller
                 ], 422);
             }
 
+            $totalMoneyPaidBefore = (float)$purchase->total_amount - (float)$purchase->remaining_bill;
+
             foreach ($purchase->purchaseItem as $oldItem) {
                 $productUnit = ProductUnit::findOrFail($oldItem->product_unit_id);
                 $oldCalculatedStock = $oldItem->quantity * $productUnit->conversion_factor;
 
-                if ($oldItem->remaining_qty !== $oldCalculatedStock) {
+                if ((float)$oldItem->remaining_qty !== (float)$oldCalculatedStock) {
                     return response()->json([
                         'status'  => false,
-                        'message' => "Gagal update! Stok dari produk '{$oldItem->product?->name}' pada nota ini sudah ada yang terjual."
+                        'message' => "Gagal update! Produk '{$oldItem->product?->name}' pada nota ini sudah digunakan dalam transaksi penjualan."
                     ], 422);
                 }
             }
+
 
             foreach ($purchase->purchaseItem as $oldItem) {
                 $productUnit = ProductUnit::findOrFail($oldItem->product_unit_id);
@@ -247,13 +262,13 @@ class PurchaseController extends Controller
 
             $purchase->purchaseItem()->delete();
 
-            $totalAmount = 0;
+            $newTotalAmount = 0;
 
             foreach ($validated['items'] as $item) {
                 $productUnit = ProductUnit::findOrFail($item['product_unit_id']);
                 $calculatedStock = $item['quantity'] * $productUnit->conversion_factor;
                 $subtotalItem = $item['quantity'] * $item['price'];
-                $totalAmount += $subtotalItem;
+                $newTotalAmount += $subtotalItem;
 
                 $costPricePerUnit = $item['price'] / $productUnit->conversion_factor;
 
@@ -266,18 +281,26 @@ class PurchaseController extends Controller
                     'subtotal'        => $subtotalItem,
                 ]);
 
-                $product = Product::findOrFail($productUnit->product_id);
+                $product = Product::findOrFail($item['product_id']);
                 $product->update([
                     'stock' => $product->stock + $calculatedStock
                 ]);
             }
 
+            if ($totalMoneyPaidBefore >= $newTotalAmount) {
+                $newRemainingBill = 0;
+                $newStatus = 'paid';
+            } else {
+                $newRemainingBill = $newTotalAmount - $totalMoneyPaidBefore;
+                $newStatus = 'unpaid';
+            }
+
             $purchase->update([
                 'supplier_id'      => $validated['supplier_id'],
                 'transaction_date' => $validated['transaction_date'],
-                'total_amount'     => $totalAmount,
-                'remaining_bill'   => $totalAmount,
-                'status'   => 'unpaid'
+                'total_amount'     => $newTotalAmount,
+                'remaining_bill'   => $newRemainingBill,
+                'status'           => $newStatus
             ]);
 
             return response()->json([
@@ -287,7 +310,6 @@ class PurchaseController extends Controller
             ], 200);
         });
     }
-
 
     /**
      * Remove the specified resource from storage.

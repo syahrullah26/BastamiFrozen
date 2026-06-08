@@ -12,14 +12,18 @@
     "@radix-ui/react-popover": "^1.1.15",
     "aos": "^2.3.4",
     "axios": "^1.16.1",
+    "chart.js": "^4.5.1",
     "cookies-next": "^6.1.1",
     "js-cookie": "^3.0.7",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.76.0",
+    "react-to-print": "^3.3.0",
+    "recharts": "^3.8.1",
     "sonner": "^2.0.7"
   },
   "devDependencies": {

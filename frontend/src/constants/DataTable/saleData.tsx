@@ -1,6 +1,12 @@
 import { Sale } from "@/types/sale";
 import Link from "next/link";
-import { Pencil, FileText, Trash2, MoreHorizontal } from "lucide-react";
+import {
+  Pencil,
+  FileText,
+  Trash2,
+  MoreHorizontal,
+  Printer,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +17,10 @@ import {
 } from "@/components/ui/Table/dropdown-menu";
 import { formatDate, formatRupiah } from "@/utils/helper";
 
-export const SaleColumns = (onDelete: (id: number, name: string) => void) => [
+export const SaleColumns = (
+  onDelete: (id: number, name: string) => void,
+  onPrint: (id: number) => void,
+) => [
   {
     header: "Invoice & Customer",
     accessor: (item: Sale) => (
@@ -238,6 +247,13 @@ export const SaleColumns = (onDelete: (id: number, name: string) => void) => [
             <Link href={`/sales/${item.id}/edit`}>
               <Pencil className="mr-2 h-4 w-4 text-zinc-400" /> Edit Sales
             </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => onPrint(item.id)}
+            className="cursor-pointer py-2 px-2.5 rounded-xl text-zinc-700 font-bold text-xs focus:text-zinc-900 focus:bg-zinc-50 transition-colors"
+          >
+            <Printer className="mr-2 h-4 w-4 text-zinc-500" /> Print Receipt
           </DropdownMenuItem>
 
           <DropdownMenuSeparator className="bg-zinc-100 my-1" />

@@ -6,7 +6,7 @@ interface BaseModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
 export const BaseModal = ({
@@ -22,14 +22,16 @@ export const BaseModal = ({
     sm: "max-w-sm",
     md: "max-w-md",
     lg: "max-w-2xl",
+    xl: "max-w-5xl",
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div
-        className={`bg-ghost-white border border-foreground/30 w-full ${sizeClasses[size]} rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200`}
+        className={`bg-ghost-white border border-foreground/30 w-full ${sizeClasses[size]} max-h-[calc(100vh-2rem)] flex flex-col rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200`}
       >
-        <div className="flex justify-between items-center p-6 border-b border-white/5">
+        {/* Header Modal - Tetap Diam di Atas (Sticky/Fixed) */}
+        <div className="flex justify-between items-center p-6 border-b border-white/5 flex-shrink-0">
           <h3 className="text-lg font-bold text-gold-luxury">{title}</h3>
           <button
             onClick={onClose}
@@ -38,7 +40,10 @@ export const BaseModal = ({
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-6">{children}</div>
+
+        <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+          {children}
+        </div>
       </div>
     </div>
   );

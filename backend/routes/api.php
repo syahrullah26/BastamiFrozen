@@ -55,6 +55,7 @@ Route::prefix('test')->group(function () {
     Route::apiResource('/attendances', AttendanceController::class);
 
     Route::get('/financial-report', [FinancialReportController::class, 'getProfitLossReport']);
+    Route::get('/financial-report/dashboard', [FinancialReportController::class, 'getDashboardData']);
 });
 
 
@@ -78,6 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/customers/{id}', [CustomerController::class, 'show']);
 
     Route::get('/sales/options', [SaleController::class, 'getOptions']);
+    Route::post('/sales/backfill-hpp', [SaleController::class, 'triggerBackfill']);
     Route::get('/sales', [SaleController::class, 'index']);
     Route::get('/sales/{id}', [SaleController::class, 'show']);
 
@@ -92,6 +94,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/employees/options', [EmployeeController::class, 'getOptions']);
     Route::get('/employees', [EmployeeController::class, 'index']);
     Route::get('/employees/{id}', [EmployeeController::class, 'show']);
+
+
+    Route::get('/financial-report', [FinancialReportController::class, 'getProfitLossReport']);
+    Route::get('/financial-report/dashboard', [FinancialReportController::class, 'getDashboardData']);
+
 
     Route::middleware('ability:admin')->group(function () {
         Route::apiResource('/products', ProductController::class);

@@ -1,6 +1,6 @@
 import { axiosInstance } from "@/lib/axios";
 import { ApiResponse, PaginatedApiResponse } from "@/types/apiResponse";
-import { Sale, SaleRequest, SaleStats } from "@/types/sale";
+import { Sale, SaleRequest, SaleStats, BackfillPayload } from "@/types/sale";
 
 export const SaleService = {
   async getSales(page: number): Promise<PaginatedApiResponse<Sale, SaleStats>> {
@@ -65,6 +65,15 @@ export const SaleService = {
         throw new Error("Failed to update sale");
       }
       return data.data?.data || data.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  triggerBackfill: async (payload?: BackfillPayload) => {
+    try {
+      const response = await axiosInstance.post("/sales/backfill-hpp", payload);
+      return response.data;
     } catch (error) {
       throw error;
     }

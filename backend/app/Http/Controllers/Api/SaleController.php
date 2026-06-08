@@ -194,9 +194,35 @@ class SaleController extends Controller
     }
 
 
-    private function backfillCostPriceAtSale($productId)
+    public function triggerBackfill(Request $request): JsonResponse
     {
-        $brokenSaleItems = SaleItem::join('sales', 'sale_items.sale_id', '=', 'sales.id')
+        $request->validate([
+            'product_id' => 'nullable|exists:products,id'
+
+        ]);
+        DB::transaction(function () use ($request) {
+            if ($request->product_id) {
+                $this->backfillCostPriceAtSale($request->product_id);
+            } else {
+                $productIds = SaleItem::where('cost_price_at_sale', '<=', 0)
+                    ->distinct()
+                    ->pluck('product_id');
+
+                foreach ($productIds as $id) {
+                    $this->backfillCostPriceAtSale($id);
+                }
+            }
+        });
+        return response()->json([
+            'status' => true,
+            'message' => 'HPP Berhasil disinkronkan dengan batch terbaru.'
+        ]);
+    }
+
+
+    private function backfillCostPriceAtSale(string $productId)
+    {
+        $brokenSaleItems = SaleItem::with('ProductUnit')->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->where('sale_items.product_id', $productId)
             ->where(function ($query) {
                 $query->where('sale_items.cost_price_at_sale', '<=', 0)
@@ -284,7 +310,7 @@ class SaleController extends Controller
             $validated = $request->validated();
 
             $sale = DB::transaction(function () use ($validated, $id) {
-                $sale = Sale::with('SaleItem.ProductUnit')->findOrFail($id);
+                $sale = Sale::with(['SaleItem.ProductUnit', 'SaleItem.Product'])->findOrFail($id);
 
                 if ($sale->status === 'paid') {
                     throw ValidationException::withMessages([
@@ -292,47 +318,58 @@ class SaleController extends Controller
                     ]);
                 }
 
-                if ($sale->remaining_bill != $sale->total_amount) {
-                    throw ValidationException::withMessages([
-                        'status' => "Nota Penjualan sudah di bayarkan sebagian tidak dapat di edit kembail."
-                    ]);
-                }
+                $totalMoneyPaidBefore = (float)$sale->total_amount - (float)$sale->remaining_bill;
 
                 foreach ($sale->saleItem as $oldItem) {
                     $oldProductUnit = $oldItem->productUnit;
                     $oldQtyInBaseUnit = $oldItem->quantity * $oldProductUnit->conversion_factor;
 
-                    $product = Product::findOrFail($oldItem->product_id);
+                    $product = $oldItem->Product;
                     $product->update([
                         'stock' => $product->stock + $oldQtyInBaseUnit
                     ]);
 
                     $tempReversalQty = $oldQtyInBaseUnit;
-
-                    $batchesToRestore = PurchaseItem::where('product_id', $oldItem->product_id)
-                        ->orderBy('created_at', 'desc')
+                    $batchesToRestore = PurchaseItem::join('purchases', 'purchase_items.purchase_id', '=', 'purchases.id')
+                        ->where('purchase_items.product_id', $oldItem->product_id)
+                        ->orderBy('purchases.transaction_date', 'desc')
+                        ->orderBy('purchase_items.created_at', 'desc')
+                        ->select('purchase_items.*')
                         ->get();
 
                     foreach ($batchesToRestore as $batch) {
                         if ($tempReversalQty <= 0) break;
 
-                        $batch->update([
-                            'remaining_qty' => $batch->remaining_qty + $tempReversalQty
-                        ]);
+                        $maxBatchCapacity = $batch->quantity * $batch->ProductUnit->conversion_factor;
+                        $availableSpace = $maxBatchCapacity - $batch->remaining_qty;
 
-                        $tempReversalQty = 0;
+                        if ($availableSpace > 0) {
+                            $restoreAmount = min($availableSpace, $tempReversalQty);
+                            $batch->update([
+                                'remaining_qty' => $batch->remaining_qty + $restoreAmount
+                            ]);
+                            $tempReversalQty -= $restoreAmount;
+                        }
+                    }
+
+                    if ($tempReversalQty > 0 && $batchesToRestore->count() > 0) {
+                        $latestBatch = $batchesToRestore->first();
+                        $latestBatch->update([
+                            'remaining_qty' => $latestBatch->remaining_qty + $tempReversalQty
+                        ]);
                     }
                 }
                 $sale->saleItem()->delete();
-                $totalAmount = 0;
+
+                $newTotalAmount = 0;
+
                 foreach ($validated['items'] as $item) {
                     $productUnit = ProductUnit::findOrFail($item['product_unit_id']);
                     $qtyNeededInBaseUnit = $item['quantity'] * $productUnit->conversion_factor;
                     $subtotalItem = $item['quantity'] * $productUnit->price;
-                    $totalAmount += $subtotalItem;
+                    $newTotalAmount += $subtotalItem;
 
                     $product = Product::findOrFail($item['product_id']);
-
                     $tempQtyNeeded = $qtyNeededInBaseUnit;
                     $totalCostForThisItem = 0;
 
@@ -359,11 +396,11 @@ class SaleController extends Controller
 
                         $tempQtyNeeded -= $takeFromThisBatch;
                     }
+
                     if ($tempQtyNeeded > 0) {
                         if ($lastPurchasePrice == 0) {
                             $lastPurchasePrice = $product->cost_price ?? 0;
                         }
-
                         $totalCostForThisItem += $tempQtyNeeded * $lastPurchasePrice;
                         $tempQtyNeeded = 0;
                     }
@@ -378,16 +415,59 @@ class SaleController extends Controller
                         'cost_price_at_sale' => $costPriceAtSale,
                         'subtotal'           => $subtotalItem
                     ]);
+
                     $product->update([
                         'stock' => $product->stock - $qtyNeededInBaseUnit
                     ]);
                 }
 
+                $moneyLeft = 0;
+
+                if ($totalMoneyPaidBefore >= $newTotalAmount) {
+
+                    $newRemainingBill = 0;
+                    $newStatus = 'paid';
+                    $moneyLeft = $totalMoneyPaidBefore - $newTotalAmount;
+                } else {
+                    $newRemainingBill = $newTotalAmount - $totalMoneyPaidBefore;
+                    $newStatus = 'unpaid';
+                }
+
+                if ($moneyLeft > 0) {
+                    $otherSales = Sale::where('customer_id', $sale->customer_id)
+                        ->where('id', '!=', $sale->id)
+                        ->where('remaining_bill', '>', 0)
+                        ->orderBy('id', 'asc')
+                        ->get();
+
+                    foreach ($otherSales as $otherSale) {
+                        if ($moneyLeft <= 0) break;
+
+                        $currRemainingBill = (float) $otherSale->remaining_bill;
+
+                        if ($moneyLeft >= $currRemainingBill) {
+                            $otherSale->update([
+                                'remaining_bill' => 0,
+                                'status'         => 'paid'
+                            ]);
+                            $moneyLeft -= $currRemainingBill;
+                        } else {
+
+                            $otherSale->update([
+                                'remaining_bill' => $currRemainingBill - $moneyLeft,
+                                'status'         => 'unpaid'
+                            ]);
+                            $moneyLeft = 0;
+                        }
+                    }
+                }
+
                 $sale->update([
                     'customer_id'      => $validated['customer_id'],
                     'transaction_date' => $validated['transaction_date'],
-                    'total_amount'     => $totalAmount,
-                    'remaining_bill'   => $totalAmount,
+                    'total_amount'     => $newTotalAmount,
+                    'remaining_bill'   => $newRemainingBill,
+                    'status'           => $newStatus
                 ]);
 
                 return $sale;
@@ -412,7 +492,6 @@ class SaleController extends Controller
             ], 500);
         }
     }
-
 
 
 

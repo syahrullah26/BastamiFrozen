@@ -1,11 +1,18 @@
 "use client";
-import React, { useState, useEffect, useSyncExternalStore } from "react";
+import React, {
+  useState,
+  useEffect,
+  useSyncExternalStore,
+  useRef,
+} from "react";
 import { useRouter, useParams } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
 import { formatDate, formatRupiah } from "@/utils/helper";
 import { SaleService } from "@/services/saleService";
 import { Sale } from "@/types/sale";
+import { useReactToPrint } from "react-to-print";
+import { FakturReceipt } from "@/components/ui/print/faktur/FakturReceipt";
 
 import {
   ArrowLeft,
@@ -27,6 +34,7 @@ export default function SaleDetailPage() {
   const params = useParams();
   const id = params?.id as string;
 
+  const componentRef = useRef<HTMLDivElement>(null);
   const [sale, setSale] = useState<Sale | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -54,6 +62,11 @@ export default function SaleDetailPage() {
     };
     fetchSale();
   }, [id]);
+
+  const handlePrint = useReactToPrint({
+    contentRef: componentRef,
+    documentTitle: `Faktur-${sale?.invoice_number || id}`,
+  });
 
   if (loading) {
     return (
@@ -129,6 +142,7 @@ export default function SaleDetailPage() {
           </div>
           <div className="w-full">
             <ButtonNav
+              onClick={handlePrint}
               className="w-full justify-center px-3 py-2 text-xs font-semibold rounded-xl"
               icon={<Printer className="w-3.5 h-3.5" />}
               variant="secondary"
@@ -364,6 +378,7 @@ export default function SaleDetailPage() {
           </table>
         </div>
       </div>
+      <FakturReceipt ref={componentRef} data={sale} />
     </div>
   );
 }
