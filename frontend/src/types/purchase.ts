@@ -50,3 +50,4 @@ export interface PurchaseStats {
   total_monthly_paid_purchase: number;
   total_remaining_bill: number;
 }
+export type BatchStatus = "all" | "out-of-stock" | "available";

@@ -7,31 +7,34 @@ import { CustomerPaymentRequest } from "@/types/payment";
 import { CustomerService } from "@/services/customerService";
 import { Customer } from "@/types/customer";
 import { FloatingInput } from "@/components/ui/input/FloatingInput";
-import { Save, Loader2 } from "lucide-react";
+import { Save } from "lucide-react";
 import ButtonLoad from "@/components/ui/button/ButtonLoad";
 import SearchableSelect from "../input/select/SearchableOptions";
 
 interface CustomerPaymentFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  customerId?: number;
 }
 
 export const CustomerPaymentForm = ({
   onSuccess,
   onCancel,
+  customerId,
 }: CustomerPaymentFormProps) => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [customer, setCustomer] = useState<Customer[]>([]);
   const [formData, setFormData] = useState<CustomerPaymentRequest>({
-    customer_id: 0,
+    customer_id: customerId || 0,
     amount: 0,
     payment_date: "",
     notes: "",
   });
 
   useEffect(() => {
+    if (customerId) return;
     const fetchCustomers = async () => {
       try {
         setLoading(true);
@@ -47,7 +50,7 @@ export const CustomerPaymentForm = ({
       }
     };
     fetchCustomers();
-  }, []);
+  }, [customerId]);
 
   const handleCustomerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = parseInt(e.target.value, 10);
@@ -90,21 +93,24 @@ export const CustomerPaymentForm = ({
       className="space-y-6 bg-ghost-white/30 rounded-2xl border-t border-foreground/30 border-b border-b-foreground/30 p-6 shadow-xl"
     >
       <div className="flex flex-col gap-2 w-full ">
-        <div className="flex flex-col gap-1.5 w-full">
-          <SearchableSelect
-            label="Customer"
-            placeholder="Select a customer"
-            searchPlaceholder="Search customers..."
-            options={customer.map((c) => ({ id: c.id, name: c.name }))}
-            value={formData.customer_id}
-            onChange={(value) =>
-              handleCustomerChange({
-                target: { value },
-              } as React.ChangeEvent<HTMLSelectElement>)
-            }
-            required
-          />
-        </div>
+        {!customerId && (
+          <div className="flex flex-col gap-1.5 w-full">
+            <SearchableSelect
+              label="Customer"
+              placeholder="Select Customer"
+              searchPlaceholder="Search Customer..."
+              options={customer.map((cust) => ({
+                id: cust.id,
+                name: cust.name,
+              }))}
+              value={formData.customer_id}
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, customer_id: Number(value) }))
+              }
+              required
+            />
+          </div>
+        )}
         <FloatingInput
           label="Amount"
           value={formData.amount}

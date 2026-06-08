@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   Clock,
   FilePen,
-  Plus,
   FileText,
   DollarSign,
   Calendar,
@@ -21,6 +20,8 @@ import {
 } from "lucide-react";
 import ButtonNav from "@/components/ui/button/ButtonNav";
 import StatsCard from "@/components/ui/card/StatsCard";
+import { SupplierPaymentForm } from "@/components/ui/form/SupplierPaymentForm";
+import { BaseModal } from "@/components/ui/modal/BaseModal";
 
 export default function SupplierDetailPage() {
   const router = useRouter();
@@ -30,6 +31,25 @@ export default function SupplierDetailPage() {
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  const loadData = async () => {
+    if (!id || id === "undefined") return;
+    try {
+      setLoading(true);
+      const data = await SupplierService.getSupplier(id);
+      setSupplier(data);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        return;
+      }
+      toast.error("Failed to load supplier");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchSupplier = async () => {
       setIsMounted(true);
@@ -50,6 +70,10 @@ export default function SupplierDetailPage() {
     fetchSupplier();
   }, [id]);
 
+  const handlePaymentSuccess = () => {
+    setIsPaymentModalOpen(false);
+    loadData();
+  };
   const totalUnpaidCount =
     supplier?.purchases?.filter((p) => p.status === "unpaid").length || 0;
   const latestPayment =
@@ -98,12 +122,27 @@ export default function SupplierDetailPage() {
               Edit
             </ButtonNav>
             <ButtonNav
-              href={`/purchases`}
-              className="bg-brand-dark text-cloud-white hover:bg-brand-primary transition-colors px-3 py-2 text-xs sm:text-sm font-medium"
-              icon={<Plus className="w-3.5 h-3.5" />}
+              onClick={() => setIsPaymentModalOpen(true)}
+              icon={<DollarSign className="w-4 h-4" />}
+              iconPosition="left"
+              variant="secondary"
+              fullWidth={false}
             >
-              purchases
+              Payment
             </ButtonNav>
+
+            <BaseModal
+              isOpen={isPaymentModalOpen}
+              onClose={() => setIsPaymentModalOpen(false)}
+              title="Pay Supplier Bill"
+              size="md"
+            >
+              <SupplierPaymentForm
+                supplierId={Number(id)}
+                onSuccess={handlePaymentSuccess}
+                onCancel={() => setIsPaymentModalOpen(false)}
+              />
+            </BaseModal>
           </div>
         </div>
       </div>
@@ -211,7 +250,10 @@ export default function SupplierDetailPage() {
                       }`}
                     >
                       <td className="py-3.5 px-4 font-bold tracking-wide">
-                        <Link href={`/purchases/${purchase.id}`} className ="cursor-pointer hover:underline hover:text-primary-brand hover:scale-105">
+                        <Link
+                          href={`/purchases/${purchase.id}`}
+                          className="cursor-pointer hover:underline hover:text-primary-brand hover:scale-105"
+                        >
                           {" "}
                           {purchase.invoice_number ||
                             `#${purchase.id?.toString().slice(0, 8)}`}

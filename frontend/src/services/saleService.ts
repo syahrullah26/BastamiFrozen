@@ -1,12 +1,28 @@
 import { axiosInstance } from "@/lib/axios";
 import { ApiResponse, PaginatedApiResponse } from "@/types/apiResponse";
-import { Sale, SaleRequest, SaleStats, BackfillPayload } from "@/types/sale";
+import {
+  Sale,
+  SaleRequest,
+  SaleStats,
+  BackfillPayload,
+  StatusFilter,
+} from "@/types/sale";
 
 export const SaleService = {
-  async getSales(page: number): Promise<PaginatedApiResponse<Sale, SaleStats>> {
+  async getSales(
+    page: number,
+    status?: StatusFilter,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<PaginatedApiResponse<Sale, SaleStats>> {
     try {
       const response = await axiosInstance.get("/sales", {
-        params: { page },
+        params: {
+          page,
+          status,
+          start_date: startDate,
+          end_date: endDate,
+        },
       });
       return response.data || [];
     } catch (error) {

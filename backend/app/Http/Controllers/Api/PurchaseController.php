@@ -23,7 +23,7 @@ class PurchaseController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
 
@@ -33,6 +33,26 @@ class PurchaseController extends Controller
                 'PurchaseItem.Product',
                 'PurchaseItem.ProductUnit'
             ]);
+
+            $baseQuery->when($request->filled('status') && $request->status !== 'all', function ($q) use ($request) {
+                $q->where('status', $request->status);
+            });
+            $baseQuery->when($request->filled('start_date') && $request->filled('end_date'), function ($q) use ($request) {
+                $q->whereBetween('transaction_date', [$request->start_date, $request->end_date]);
+            });
+
+            $baseQuery->when($request->filled('batch_status'), function ($q) use ($request) {
+                match ($request->batch_status) {
+
+                    'available' => $q->whereHas('PurchaseItem', function ($subQuery) {
+                        $subQuery->where('remaining_qty', '>', 0);
+                    }),
+                    'out-of-stock' => $q->whereHas('PurchaseItem', function ($subQuery) {
+                        $subQuery->where('remaining_qty', '<=', 0);
+                    }),
+                    default => $q
+                };
+            });
 
             $startDate = Carbon::now()->startOfMonth()->toDateString();
             $endDate = Carbon::now()->endOfMonth()->toDateString();

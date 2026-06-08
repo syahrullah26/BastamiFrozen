@@ -20,18 +20,22 @@ export default function ButtonNav({
   ...props
 }: ButtonNavProps) {
   const baseStyle = `
-    group py-3 rounded-xl font-bold text-sm tracking-wide shadow-md 
-    transition-all duration-300 relative overflow-hidden flex items-center justify-center gap-2
-    cursor-pointer active:scale-[0.98]
-    border border-foreground/30
-    ${fullWidth ? "w-full" : "px-6"}
+    group relative overflow-hidden flex items-center justify-center gap-2
+    py-2.5 font-semibold text-xs uppercase tracking-wider
+    rounded-xl shadow-[0_2px_8px_-3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.12)]
+    transition-all duration-300 ease-in-out cursor-pointer 
+    active:scale-[0.97] select-none border
+    ${fullWidth ? "w-full" : "px-5"}
   `;
+
   const variants = {
-    primary: "bg-primary-brand text-background hover:bg-brand-dark ",
+    primary: "bg-brand-dark text-white border-brand-dark hover:bg-zinc-800",
     secondary:
-      "bg-gray-100 text-gray-800 hover:bg-gray-200 border border-foreground/30 shadow-sm",
-    danger: "bg-red-600 text-white hover:bg-red-700",
-    neutral: "bg-surface text-gray-800   hover:bg-brand-surface/80",
+      "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 shadow-2xs",
+    danger:
+      "bg-rose-500 text-white border-rose-500 hover:bg-rose-600 shadow-rose-100",
+    neutral:
+      "bg-zinc-100 text-zinc-600 border-zinc-100 hover:bg-zinc-200/70 hover:text-zinc-800 shadow-none",
   };
 
   const combinedClassName = `${baseStyle} ${variants[variant]} ${className}`;
@@ -41,28 +45,36 @@ export default function ButtonNav({
     return (
       <span
         className={`
-        transition-transform duration-300 ease-out transform
-        ${iconPosition === "right" ? "group-hover:translate-x-1" : "group-hover:-translate-x-1"}
-      `}
+          inline-flex items-center justify-center w-4 h-4
+          transition-transform duration-300 ease-out transform shrink-0
+          ${iconPosition === "right" ? "group-hover:translate-x-0.5" : "group-hover:-translate-x-0.5"}
+        `}
       >
         {icon}
       </span>
     );
   };
 
+  const shimmerElement = (
+    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-linear-to-r from-transparent via-white/15 to-transparent transition-transform duration-1000 ease-in-out pointer-events-none" />
+  );
+
   if (href) {
     return (
       <Link href={href} className={combinedClassName}>
+        {shimmerElement}
         {icon && iconPosition === "left" && renderIcon()}
-        {children}
+        <span className="relative z-10">{children}</span>
         {icon && iconPosition === "right" && renderIcon()}
       </Link>
     );
   }
+
   return (
     <button type="button" className={combinedClassName} {...props}>
+      {shimmerElement}
       {icon && iconPosition === "left" && renderIcon()}
-      {children}
+      <span className="relative z-10">{children}</span>
       {icon && iconPosition === "right" && renderIcon()}
     </button>
   );

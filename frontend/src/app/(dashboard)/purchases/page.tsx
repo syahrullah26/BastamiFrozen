@@ -10,12 +10,12 @@ import React, {
 import axios from "axios";
 import { toast } from "sonner";
 import { PurchaseService } from "@/services/purchaseService";
-import { Purchase, PurchaseStats } from "@/types/purchase";
+import { Purchase, PurchaseStats, BatchStatus } from "@/types/purchase";
+import { StatusFilter } from "@/types/sale";
 import ButtonNav from "@/components/ui/button/ButtonNav";
 import {
   Plus,
   Search,
-  Filter,
   Clock,
   Calendar,
   Receipt,
@@ -30,6 +30,10 @@ import { formatRupiah } from "@/utils/helper";
 import { BaseModal } from "@/components/ui/modal/BaseModal";
 import { PurchaseForm } from "@/components/ui/form/PurchaseForm";
 import { SupplierPaymentForm } from "@/components/ui/form/SupplierPaymentForm";
+import { useStatusFilter } from "@/hooks/useStatusFilter";
+import { FILTER_TABS_CONFIG } from "@/constants/Filter/StatusFilterConfig";
+import { useBatchFilter } from "@/hooks/useBatchFilter";
+import { BATCH_TAB_CONFIG } from "@/constants/Filter/BatchFilterConfig";
 
 const emptySubscribe = () => () => {};
 
@@ -48,6 +52,19 @@ export default function Purchases() {
     name: string;
   } | null>(null);
 
+  const { activeTab, setActiveTab } = useStatusFilter({
+    data: purchases,
+    initialStatus: "unpaid",
+  });
+
+  const { activeBatchTab, setActiveBatchTab } = useBatchFilter({
+    data: purchases,
+    initialBatch: "all",
+  });
+
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+
   const [purchaseStats, setPurchaseStats] = useState<PurchaseStats>({
     total_monthly_purchase: 0,
     total_pending_purchase: 0,
@@ -65,53 +82,85 @@ export default function Purchases() {
     () => false,
   );
 
-  const loadData = useCallback(async (pageNumber = 1) => {
-    try {
-      setLoading(true);
-      const data = await PurchaseService.getPurchases(pageNumber);
-      setPurchases(data.data.data || []);
-      setCurrentPage(data.data.meta?.current_page || 1);
-      setLastPage(data.data.meta?.last_page || 1);
-      setTotalItems(data.data.meta?.total || 0);
+  const loadData = useCallback(
+    async (
+      pageNumber = 1,
+      status: StatusFilter = "unpaid",
+      startDate?: string,
+      endDate?: string,
+      batchStatus: BatchStatus = "all",
+    ) => {
+      try {
+        setLoading(true);
+        const data = await PurchaseService.getPurchases(
+          pageNumber,
+          status === "all" ? undefined : status,
+          startDate,
+          endDate,
+          batchStatus === "all" ? undefined : batchStatus,
+        );
+        setPurchases(data.data.data || []);
+        setCurrentPage(data.data.meta?.current_page || 1);
+        setLastPage(data.data.meta?.last_page || 1);
+        setTotalItems(data.data.meta?.total || 0);
 
-      const metaStats = data.data?.meta?.stats;
-      if (metaStats) {
-        setPurchaseStats({
-          total_monthly_purchase: metaStats.total_monthly_purchase || 0,
-          total_pending_purchase: metaStats.total_pending_purchase || 0,
-          total_monthly_paid_purchase:
-            metaStats.total_monthly_paid_purchase || 0,
-          total_remaining_bill: metaStats.total_remaining_bill || 0,
-        });
+        const metaStats = data.data?.meta?.stats;
+        if (metaStats) {
+          setPurchaseStats({
+            total_monthly_purchase: metaStats.total_monthly_purchase || 0,
+            total_pending_purchase: metaStats.total_pending_purchase || 0,
+            total_monthly_paid_purchase:
+              metaStats.total_monthly_paid_purchase || 0,
+            total_remaining_bill: metaStats.total_remaining_bill || 0,
+          });
+        }
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          return;
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        return;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     let isMounted = true;
     const fetchData = async () => {
       if (isMounted) {
-        await loadData(currentPage);
+        await loadData(
+          currentPage,
+          activeTab,
+          startDate,
+          endDate,
+          activeBatchTab,
+        );
       }
     };
     fetchData();
     return () => {
       isMounted = false;
     };
-  }, [loadData, currentPage]);
+  }, [loadData, currentPage, activeTab, startDate, endDate, activeBatchTab]);
+
+  const handleTabChange = (status: StatusFilter) => {
+    setActiveTab(status);
+    setCurrentPage(1);
+  };
+
+  const handleBatchTabChange = (status: BatchStatus) => {
+    setActiveBatchTab(status);
+    setCurrentPage(1);
+  };
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
   const handleOpenPaymentModal = () => setIsModalPaymentOpen(true);
   const handleClosePaymentModal = () => setIsModalPaymentOpen(false);
 
-  const handleSuccess = () => loadData(currentPage);
+  const handleSuccess = () =>
+    loadData(currentPage, activeTab, startDate, endDate, activeBatchTab);
 
   const handleDeleteClick = useCallback((id: number, name: string) => {
     setSelectedPurchase({ id, name });
@@ -127,51 +176,13 @@ export default function Purchases() {
         description: `${selectedPurchase.name} has been removed.`,
       });
       setIsDeleteModalOpen(false);
-      loadData();
+      loadData(1, activeTab, startDate, endDate, activeBatchTab);
     } catch (error) {
       toast.error("Failed to delete purchase: " + error);
     } finally {
       setIsDeleting(false);
     }
   };
-
-  const stats = useMemo(() => {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-
-    const totalPeriod = purchases.filter((item) => {
-      if (!item.transaction_date) return false;
-      const transactionDate = new Date(item.transaction_date);
-      return (
-        transactionDate.getFullYear() === currentYear &&
-        transactionDate.getMonth() === currentMonth
-      );
-    });
-
-    const totalPending = purchases.filter((item) => item.status === "unpaid");
-
-    const totalPaid = purchases.filter((item) => {
-      if (!item.transaction_date) return false;
-      const transactionDate = new Date(item.transaction_date);
-      return (
-        item.status === "paid" &&
-        transactionDate.getFullYear() === currentYear &&
-        transactionDate.getMonth() === currentMonth
-      );
-    });
-
-    const remainingBills = purchases.reduce((acc, currentPurchase) => {
-      return acc + (Number(currentPurchase.remaining_bill) || 0);
-    }, 0);
-
-    return {
-      totalPeriodLength: totalPeriod.length,
-      totalPendingLength: totalPending.length,
-      totalPaidLength: totalPaid.length,
-      remainingBills,
-    };
-  }, [purchases]);
 
   const filteredData = useMemo(() => {
     return purchases.filter((purchase) => {
@@ -197,7 +208,7 @@ export default function Purchases() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-row items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-brand-dark">
             Purchases
@@ -206,7 +217,7 @@ export default function Purchases() {
             Manage and monitor your bills to suppliers
           </p>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
           <ButtonNav
             onClick={handleOpenModal}
             icon={<Plus className="w-4 h-4" />}
@@ -226,6 +237,7 @@ export default function Purchases() {
           </ButtonNav>
         </div>
       </div>
+
       <BaseModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -246,7 +258,7 @@ export default function Purchases() {
         />
       </BaseModal>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatsCard
           title="Purchases This Month"
           value={purchaseStats.total_monthly_purchase}
@@ -270,35 +282,147 @@ export default function Purchases() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:gap-8">
+      <div className="grid grid-cols-1 gap-4">
         <StatsCard
           title="Remaining Bills"
-          value={isClient ? formatRupiah(purchaseStats.total_remaining_bill) : "Rp 0"}
+          value={
+            isClient ? formatRupiah(purchaseStats.total_remaining_bill) : "Rp 0"
+          }
           icon={<DollarSign className="w-6 h-6" />}
           iconBgColor="bg-primary-brand/10"
           iconColor="text-primary-brand"
         />
       </div>
 
-      <div className="bg-snow-white rounded-xl shadow-xs border border-brand-dark/30 overflow-hidden">
-        <div className="p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-2 shrink-0">
-            <button className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-all border border-zinc-200/50 dark:border-white/10 cursor-pointer">
-              <Filter className="w-4 h-4" /> Filter
-            </button>
-            <div className="h-6 w-px bg-zinc-200 dark:bg-white/10 mx-1" />
+      <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] overflow-hidden">
+        <div className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-2 bg-zinc-50/50 border border-zinc-200 rounded-xl px-3 py-1.5 shadow-2xs focus-within:bg-white focus-within:border-brand-dark focus-within:ring-4 focus-within:ring-brand-dark/5 transition-all duration-200 flex-1 md:flex-initial">
+            <div className="flex items-center gap-2 text-zinc-400 shrink-0">
+              <Calendar className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                Period:
+              </span>
+            </div>
+            <div className="flex items-center gap-1 w-full">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-transparent text-xs text-zinc-700 font-medium focus:outline-none cursor-pointer w-full scheme-light"
+              />
+              <span className="text-zinc-400 text-xs px-0.5">-</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-transparent text-xs text-zinc-700 font-medium focus:outline-none cursor-pointer w-full scheme-light"
+              />
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartDate("");
+                    setEndDate("");
+                  }}
+                  className="text-[10px] font-bold text-rose-500 hover:text-rose-600 ml-1 px-1.5 py-0.5 rounded-md hover:bg-rose-50 cursor-pointer transition-colors"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="group w-full sm:max-w-xs flex items-center bg-ghost-white border border-brand-dark/50 rounded-xl px-3 focus-within:border-brand-dark transition-all">
-            <Search className="w-4 h-4 text-zinc-400 group-focus-within:text-brand-dark transition-colors" />
-            <input
-              type="text"
-              placeholder="Search purchases..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-2 pr-2 py-2.5 bg-transparent text-xs focus:outline-none transition-all"
-            />
+          <div className="w-full md:max-w-xs flex-1 md:flex-initial">
+            <div className="group relative flex items-center bg-zinc-50/50 hover:bg-white border border-zinc-200 rounded-xl px-3.5 shadow-2xs focus-within:bg-white focus-within:border-brand-dark focus-within:ring-4 focus-within:ring-brand-dark/5 transition-all duration-200 w-full">
+              <Search className="w-4 h-4 text-zinc-400 group-focus-within:text-brand-dark transition-colors shrink-0" />
+              <input
+                type="text"
+                placeholder="Search purchases..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-2.5 pr-1 py-2.5 bg-transparent text-xs text-zinc-800 placeholder-zinc-400 font-medium focus:outline-none"
+              />
+            </div>
           </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between border-b border-zinc-200 pb-3 gap-4">
+          <div className="space-y-1">
+            <h2 className="text-lg font-bold tracking-tight text-brand-dark">
+              Your Purchases List
+            </h2>
+            <p className="text-xs text-zinc-400 font-medium">
+              Showing{" "}
+              <span className="text-brand-dark font-semibold">
+                {activeBatchTab}
+              </span>{" "}
+              batch with{" "}
+              <span className="text-brand-dark font-semibold">{activeTab}</span>{" "}
+              invoices.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex items-center gap-1 bg-zinc-100 p-1 rounded-xl w-full sm:w-auto shadow-inner">
+              {BATCH_TAB_CONFIG.map((tab) => {
+                const isActive = activeBatchTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => handleBatchTabChange(tab.id)}
+                    className={`flex-1 sm:flex-initial text-center px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all duration-300 whitespace-nowrap cursor-pointer ${
+                      isActive
+                        ? "bg-white text-brand-dark shadow-xs border border-zinc-200/60 scale-[1.01]"
+                        : "text-zinc-400 hover:text-zinc-600"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="hidden sm:block text-zinc-300 font-light text-sm">
+              /
+            </div>
+
+            <div className="flex items-center gap-1 bg-zinc-100/60 p-1 rounded-xl w-full sm:w-auto shadow-inner border border-zinc-200/40">
+              {FILTER_TABS_CONFIG.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => handleTabChange(tab.id)}
+                    className={`flex-1 sm:flex-initial text-center px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                      isActive
+                        ? "bg-brand-dark text-white shadow-xs"
+                        : "text-zinc-400 hover:text-zinc-600"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full overflow-auto">
+          <TableData
+            columns={columns}
+            data={filteredData}
+            loading={loading}
+            pagination={{
+              currentPage: currentPage,
+              lastPage: lastPage,
+              totalItems: totalItems,
+              onPageChange: (newPage) => setCurrentPage(newPage),
+            }}
+          />
         </div>
       </div>
 
@@ -311,26 +435,6 @@ export default function Purchases() {
         message={`Are you sure you want to delete ${selectedPurchase?.name}?`}
         type="delete"
       />
-
-      <div className="flex items-start">
-        <span className="text-xl font-bold text-brand-dark md:text-2xl mt-3.5 ml-3.5">
-          Your Purchases List
-        </span>
-      </div>
-
-      <div className="w-full overflow-auto">
-        <TableData
-          columns={columns}
-          data={filteredData}
-          loading={loading}
-          pagination={{
-            currentPage: currentPage,
-            lastPage: lastPage,
-            totalItems: totalItems,
-            onPageChange: (newPage) => setCurrentPage(newPage),
-          }}
-        />
-      </div>
     </div>
   );
 }

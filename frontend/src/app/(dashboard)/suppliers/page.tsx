@@ -118,19 +118,6 @@ export default function SuppliersPage() {
     }
   };
 
-  const totalSupplier = totalItems;
-
-  const totalUnpaidInvoice = suppliers.reduce((acc, supplier) => {
-    const unpaidPurchases =
-      supplier.purchases?.filter((s) => s.status === "unpaid").length || 0;
-    return acc + unpaidPurchases;
-  }, 0);
-
-  const globalRemainingBills = suppliers.reduce((acc, supplier) => {
-    return acc + (supplier.remaining_bill || 0);
-  }, 0);
-
-  // Filter lokal untuk kolom pencarian
   const filteredData = suppliers.filter((supplier) => {
     const name = supplier.name?.toLowerCase().includes(search.toLowerCase());
     const phone = supplier.information?.phone
@@ -190,7 +177,11 @@ export default function SuppliersPage() {
         />
         <StatsCard
           title="Global Remaining Bills"
-          value={isClient ? formatRupiah(supplierStats.total_remaining_bill) : "Rp. 0"}
+          value={
+            isClient
+              ? formatRupiah(supplierStats.total_remaining_bill)
+              : "Rp. 0"
+          }
           icon={<DollarSign className="w-6 h-6" />}
           iconColor="text-red-400"
           iconBgColor="bg-red-400/10"

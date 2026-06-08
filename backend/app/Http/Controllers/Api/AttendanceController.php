@@ -21,35 +21,62 @@ class AttendanceController extends Controller
     {
         try {
             $query = Attendance::with(['employee', 'expense']);
-            if ($request->has('date')) {
+            if ($request->filled('date')) {
                 $query->where('attendace_date', $request->date);
             }
-            if ($request->has('employee_id')) {
+            if ($request->filled('employee_id')) {
                 $query->where('employee_id', $request->employee_id);
             }
-            $startDate = Carbon::now()->startOfMonth()->toDateString();
-            $endDate = Carbon::now()->endOfMonth()->toDateString();
+            if ($request->type === 'history') {
+                $startDate = $request->filled('startDate') ? $request->startDate : null;
+                $endDate = $request->filled('endDate') ? $request->endDate : null;
+            } else {
+                $startDate = Carbon::now()->startOfMonth()->toDateString();
+                $endDate = Carbon::now()->endOfMonth()->toDateString();
+            }
 
-            $monthlyQuery = $query->whereBetween('attendace_date', [$startDate, $endDate]);
-            $totalPresent = $monthlyQuery->clone()->where('status', 'present')->count();
-            $totalAbsent  = $monthlyQuery->clone()->where('status', 'absent')->count();
-            $totalLeave   = $monthlyQuery->clone()->whereIn('status', ['leave', 'leave_with_permission'])->count();
-            $totalSalaryExpense = $monthlyQuery->clone()
+            $statsQuery = $query->clone();
+            if ($startDate && $endDate) {
+                $statsQuery->whereBetween('attendace_date', [$startDate, $endDate]);
+            } elseif ($startDate) {
+                $statsQuery->where('attendace_date', '>=', $startDate);
+            } elseif ($endDate) {
+                $statsQuery->where('attendace_date', '<=', $endDate);
+            }
+
+            $totalPresent = $statsQuery->clone()->where('status', 'present')->count();
+            $totalAbsent  = $statsQuery->clone()->where('status', 'absent')->count();
+            $totalLeave   = $statsQuery->clone()->whereIn('status', ['leave', 'leave_with_permission'])->count();
+            $totalSalaryExpense = $statsQuery->clone()
                 ->where('attendances.status', 'present')
                 ->join('employees', 'attendances.employee_id', '=', 'employees.id')
                 ->sum('employees.salary');
+            $listQuery = $query->clone();
+            if ($request->type === 'history') {
+                if ($request->filled('startDate')) {
+                    $listQuery->where('attendace_date', '>=', $request->startDate);
+                }
+                if ($request->filled('endDate')) {
+                    $listQuery->where('attendace_date', '<=', $request->endDate);
+                }
+            } else {
+                $listQuery->whereBetween('attendace_date', [
+                    Carbon::now()->startOfMonth()->toDateString(),
+                    Carbon::now()->endOfMonth()->toDateString()
+                ]);
+            }
 
-            $attendances = $query->latest('attendace_date')->paginate(15);
+            $attendances = $listQuery->latest('attendace_date')->paginate(15);
             return response()->json([
                 'status'  => true,
                 'message' => 'Attendance list retrieved successfully',
                 'data'    => AttendanceResource::collection($attendances)->additional([
                     'meta' => [
                         'stats' => [
-                            'total_present' => $totalPresent,
-                            'total_absent' => $totalAbsent,
-                            'total_leave' => $totalLeave,
-                            'total_salary_expense' => $totalSalaryExpense,
+                            'total_present'        => $totalPresent,
+                            'total_absent'         => $totalAbsent,
+                            'total_leave'          => $totalLeave,
+                            'total_salary_expense' => (float) $totalSalaryExpense,
                         ]
                     ]
                 ])->response()->getData(true),

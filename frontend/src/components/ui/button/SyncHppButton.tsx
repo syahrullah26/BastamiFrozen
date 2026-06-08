@@ -53,7 +53,7 @@ export default function SyncHppButton({
     <button
       onClick={handleSync}
       disabled={isLoading}
-      className={`flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${
+      className={`flex items-center gap-2 px-4 py-2 text-sm font-medium cursor-pointer text-white rounded-lg transition-colors ${
         isLoading
           ? "bg-brand-neutral cursor-not-allowed"
           : "bg-primary-brand hover:bg-brand-dark active:bg-brand-dark/70"
@@ -97,7 +97,7 @@ export default function SyncHppButton({
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.253 8H18"
             />
           </svg>
-          Sync Pending HPP
+          Sync HPP
         </>
       )}
     </button>

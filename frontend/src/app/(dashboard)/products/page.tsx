@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+
 import { toast } from "sonner";
 import { ProductService } from "@/services/productService";
-import { Product, ProductRequest } from "@/types/product";
+import { Product } from "@/types/product";
 import { ProductColumns } from "@/constants/DataTable/productData";
 import ButtonNav from "@/components/ui/button/ButtonNav";
 import { Plus, Search, Filter, Package } from "lucide-react";
@@ -15,7 +15,6 @@ import ConfirmModal from "@/components/ui/modal/ConfirmModal";
 import { ProductForm } from "@/components/ui/form/ProductForm";
 
 export default function ProductsPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -93,7 +92,6 @@ export default function ProductsPage() {
     }
   };
 
-  const totalProduct = products.length;
   const columns = ProductColumns(handleDeleteClick);
 
   const filteredData = products.filter((item) => {

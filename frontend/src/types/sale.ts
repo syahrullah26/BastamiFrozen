@@ -20,6 +20,7 @@ export interface SaleItem {
 }
 
 export type StatusSale = "paid" | "unpaid";
+export type StatusFilter = "paid" | "unpaid" | "all";
 export interface Sale {
   id: number;
   customer_id: number;

@@ -13,16 +13,13 @@ import {
   User,
   FileText,
   Clock,
-  Printer,
   MapPin,
   Phone,
   CheckCircle2,
   CreditCard,
   ExternalLink,
-  Download,
 } from "lucide-react";
 import ButtonNav from "@/components/ui/button/ButtonNav";
-import StatsCard from "@/components/ui/card/StatsCard";
 
 export default function CustomerPaymentDetailPage() {
   const router = useRouter();
@@ -121,7 +118,7 @@ export default function CustomerPaymentDetailPage() {
           >
             Back to List
           </ButtonNav>
-          <ButtonNav
+          {/* <ButtonNav
             onClick={() =>
               toast.success("Payment receipt printed successfully")
             }
@@ -132,7 +129,7 @@ export default function CustomerPaymentDetailPage() {
             className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-zinc-800 hover:bg-zinc-900 rounded-xl transition-all shadow-xs cursor-pointer"
           >
             Print Receipt
-          </ButtonNav>
+          </ButtonNav> */}
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -357,7 +354,7 @@ export default function CustomerPaymentDetailPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3 border border-zinc-100 bg-zinc-50/50 rounded-xl hover:border-zinc-200 transition-all">
+              {/* <div className="flex items-center justify-between p-3 border border-zinc-100 bg-zinc-50/50 rounded-xl hover:border-zinc-200 transition-all">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-purple-50 border border-purple-100 rounded-lg text-purple-600">
                     <FileText className="w-4 h-4" />
@@ -380,7 +377,7 @@ export default function CustomerPaymentDetailPage() {
                   variant="secondary"
                   className="text-zinc-400 hover:text-brand-dark transition-colors cursor-pointer"
                 />
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

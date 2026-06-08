@@ -124,51 +124,6 @@ export default function ExpensePage() {
     }
   };
 
-  const stats = useMemo(() => {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-
-    const monthlyExpense = expenses.filter((item) => {
-      if (!item.expense_date) return false;
-      const expenseDate = new Date(item.expense_date);
-      return (
-        expenseDate.getFullYear() === currentYear &&
-        expenseDate.getMonth() === currentMonth
-      );
-    });
-    const totalMonthlySalary = expenses.filter((item) => {
-      if (item.type !== "salary") return false;
-      if (!item.expense_date) return false;
-      const expenseDate = new Date(item.expense_date);
-      return (
-        expenseDate.getFullYear() === currentYear &&
-        expenseDate.getMonth() === currentMonth
-      );
-    });
-    const totalMonthlyPayment = expenses.filter((item) => {
-      if (item.type !== "pay_supplier") return false;
-      if (!item.expense_date) return false;
-      const expenseDate = new Date(item.expense_date);
-      return (
-        expenseDate.getFullYear() === currentYear &&
-        expenseDate.getMonth() === currentMonth
-      );
-    });
-
-    return {
-      totalMonthlyExpense: monthlyExpense.reduce((acc, item) => {
-        return acc + (Number(item.amount) || 0);
-      }, 0),
-      totalMonthlySalary: totalMonthlySalary.reduce((acc, item) => {
-        return acc + (Number(item.amount) || 0);
-      }, 0),
-      totalMonthlyPayment: totalMonthlyPayment.reduce((acc, item) => {
-        return acc + (Number(item.amount) || 0);
-      }, 0),
-    };
-  }, [expenses]);
-
   const filteredData = useMemo(() => {
     return expenses.filter((expense) => {
       const type = expense.type.toLowerCase().includes(search.toLowerCase());
@@ -228,7 +183,11 @@ export default function ExpensePage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
           <StatsCard
             title="Total Expenses"
-            value={isClient ? formatRupiah(expenseStats.total_monthly_expense) : "Rp 0"}
+            value={
+              isClient
+                ? formatRupiah(expenseStats.total_monthly_expense)
+                : "Rp 0"
+            }
             icon={<BanknoteArrowDown className="w-5 h-5 stroke-1.5" />}
             iconBgColor="bg-primary-brand/10"
             iconColor="text-primary-brand"
@@ -236,7 +195,11 @@ export default function ExpensePage() {
 
           <StatsCard
             title="Total Salary"
-            value={isClient ? formatRupiah(expenseStats.total_monthly_salary_expense) : "Rp 0"}
+            value={
+              isClient
+                ? formatRupiah(expenseStats.total_monthly_salary_expense)
+                : "Rp 0"
+            }
             icon={<FileText className="w-5 h-5 stroke-1.5" />}
             iconBgColor="bg-tertiary-brand/10"
             iconColor="text-tertiary-brand"
@@ -244,7 +207,11 @@ export default function ExpensePage() {
 
           <StatsCard
             title="Total Payment"
-            value={isClient ? formatRupiah(expenseStats.total_monthly_supplier_expense) : "Rp 0"}
+            value={
+              isClient
+                ? formatRupiah(expenseStats.total_monthly_supplier_expense)
+                : "Rp 0"
+            }
             icon={<FileBox className="w-5 h-5 stroke-1.5" />}
             iconBgColor="bg-emerald-500/10"
             iconColor="text-emerald-500"

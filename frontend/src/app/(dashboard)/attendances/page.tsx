@@ -11,17 +11,18 @@ import StatsCard from "@/components/ui/card/StatsCard";
 import {
   Plus,
   Search,
-  Filter,
   Check,
   X,
   Clock,
   DollarSign,
+  Calendar,
 } from "lucide-react";
 import ConfirmModal from "@/components/ui/modal/ConfirmModal";
 import { AttendanceColumns } from "@/constants/DataTable/attendanceData";
 import { AttendanceForm } from "@/components/ui/form/AttendanceForm";
 import { formatRupiah } from "@/utils/helper";
 import { BaseModal } from "@/components/ui/modal/BaseModal";
+import { TYPEATTENDANCE_TABS_CONFIG } from "@/constants/Filter/TypeAttendanceFilterConfig";
 
 export default function AttendancePage() {
   const [attendances, setAttendances] = useState<Attendance[]>([]);
@@ -37,6 +38,10 @@ export default function AttendancePage() {
     name: string;
   } | null>(null);
 
+  const [activeTab, setActiveTab] = useState<string>("monthly");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+
   const [attendanceStats, setAttendanceStats] = useState<AttendanceStats>({
     total_present: 0,
     total_absent: 0,
@@ -48,31 +53,44 @@ export default function AttendancePage() {
   const [lastPage, setLastPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  const loadData = useCallback(async (pageNumber = 1) => {
-    try {
-      setLoading(true);
-      const data = await AttendanceService.getAttendances(pageNumber);
-      setAttendances(data.data.data || []);
-      setCurrentPage(data.data.meta?.current_page || 1);
-      setLastPage(data.data.meta?.last_page || 1);
-      setTotalItems(data.data.meta?.total || 0);
+  const loadData = useCallback(
+    async (
+      pageNumber = 1,
+      activeTab: string = "monthly",
+      startDate?: string,
+      endDate?: string,
+    ) => {
+      try {
+        setLoading(true);
+        const data = await AttendanceService.getAttendances(
+          pageNumber,
+          startDate,
+          endDate,
+          activeTab === "history" ? "history" : "monthly",
+        );
+        setAttendances(data.data.data || []);
+        setCurrentPage(data.data.meta?.current_page || 1);
+        setLastPage(data.data.meta?.last_page || 1);
+        setTotalItems(data.data.meta?.total || 0);
 
-      const metaStats = data.data.meta?.stats;
-      if (metaStats) {
-        setAttendanceStats({
-          total_present: metaStats.total_present || 0,
-          total_absent: metaStats.total_absent || 0,
-          total_leave: metaStats.total_leave || 0,
-          total_salary_expense: metaStats.total_salary_expense || 0,
-        });
+        const metaStats = data.data.meta?.stats;
+        if (metaStats) {
+          setAttendanceStats({
+            total_present: metaStats.total_present || 0,
+            total_absent: metaStats.total_absent || 0,
+            total_leave: metaStats.total_leave || 0,
+            total_salary_expense: metaStats.total_salary_expense || 0,
+          });
+        }
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) return;
+        toast.error("Failed to load attendances");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) return;
-      toast.error("Failed to load attendances");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -83,11 +101,12 @@ export default function AttendancePage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadData(currentPage);
+      loadData(currentPage, activeTab, startDate, endDate);
     }, 0);
     return () => clearTimeout(timer);
-  }, [loadData, currentPage]);
+  }, [loadData, currentPage, activeTab, startDate, endDate]);
 
+  const handleTabChange = (status: string) => setActiveTab(status);
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
   const handleSuccess = () => loadData();
@@ -113,37 +132,6 @@ export default function AttendancePage() {
       setIsDeleting(false);
     }
   };
-
-  const stats = useMemo(() => {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    const periodAttendances = attendances.filter((item) => {
-      if (!item.attendace_date) return false;
-      const attendanceDate = new Date(item.attendace_date);
-      return (
-        attendanceDate.getMonth() === currentMonth &&
-        attendanceDate.getFullYear() === currentYear
-      );
-    });
-    const present = periodAttendances.filter(
-      (item) => item.status === "present",
-    );
-    const absent = periodAttendances.filter((item) => item.status === "absent");
-    const leave = periodAttendances.filter((item) => item.status === "leave");
-    const salary = present.reduce((total, item) => {
-      const employeeSalary = Number(item.employee?.salary);
-      const validSalary = isNaN(employeeSalary) ? 0 : employeeSalary;
-      return total + validSalary;
-    }, 0);
-
-    return {
-      presentCount: present.length,
-      absentCount: absent.length,
-      leaveCount: leave.length,
-      totalSalary: salary,
-    };
-  }, [attendances]);
 
   const filteredData = useMemo(() => {
     return attendances.filter((item) => {
@@ -233,11 +221,43 @@ export default function AttendancePage() {
 
       <div className="bg-snow-white rounded-xl shadow-xs border border-brand-dark/30 overflow-hidden">
         <div className="p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-2 shrink-0">
-            <button className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-all border border-zinc-200/50 dark:border-white/10 cursor-pointer">
-              <Filter className="w-4 h-4" /> Filter
-            </button>
-            <div className="h-6 w-px bg-zinc-200 dark:bg-white/10 mx-1" />
+          <div className="flex items-center gap-2 bg-zinc-50/50 border border-zinc-200 rounded-xl px-3 py-1.5 shadow-2xs focus-within:bg-white focus-within:border-brand-dark focus-within:ring-4 focus-within:ring-brand-dark/5 transition-all duration-200 flex-1 sm:flex-initial">
+            <div className="flex items-center gap-2 text-zinc-400 shrink-0">
+              <Calendar className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                Period:
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1 w-full">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-transparent text-xs text-zinc-700 font-medium focus:outline-none cursor-pointer w-full scheme-light"
+              />
+
+              <span className="text-zinc-400 text-xs px-0.5">-</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-transparent text-xs text-zinc-700 font-medium focus:outline-none cursor-pointer w-full scheme-light"
+              />
+
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartDate("");
+                    setEndDate("");
+                  }}
+                  className="text-[10px] font-bold text-rose-500 hover:text-rose-600 ml-1 px-1.5 py-0.5 rounded-md hover:bg-rose-50 cursor-pointer transition-colors"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="group w-full sm:max-w-xs flex items-center bg-ghost-white border border-brand-dark/50 rounded-xl px-3 focus-within:border-brand-dark transition-all">
@@ -263,10 +283,30 @@ export default function AttendancePage() {
         isLoading={isDeleting}
       />
 
-      <div className="flex items-start">
+      <div className="flex md:flex-row flex-col gap-4 md:justify-between justify-center items-center md:items-start">
         <span className="text-xl font-bold text-brand-dark md:text-2xl mt-3.5 ml-3.5">
-          Attendance List
+          Your Attendance List (
+          {activeTab === "monthly" ? "This Month" : "History"})
         </span>
+        <div className="flex items-center gap-1 bg-zinc-100 p-1.5 rounded-xl w-full lg:w-fit overflow-x-auto no-scrollbar">
+          {TYPEATTENDANCE_TABS_CONFIG.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleTabChange(tab.id)}
+                className={`flex-1 lg:flex-initial text-center px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? "bg-white text-brand-dark shadow-xs border border-zinc-200/50"
+                    : "text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/30"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="w-full overflow-auto">

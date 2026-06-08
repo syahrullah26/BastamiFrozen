@@ -64,7 +64,7 @@ export const FakturReceipt = React.forwardRef<
         </div>
       </div>
 
-      <div className="border-t border-b border-zinc-300 py-[1px] my-1">
+      <div className="border-t border-b border-zinc-300 py-px my-1">
         <table className="w-full text-left border-collapse text-[9px]">
           <thead>
             <tr className="border-t border-b border-zinc-300 font-bold text-brand-dark bg-zinc-50/40">
@@ -113,7 +113,7 @@ export const FakturReceipt = React.forwardRef<
               {data.items?.length || 0} ITEMS
             </span>
           </div>
-          <div className="border-t border-zinc-300 py-[1px]">
+          <div className="border-t border-zinc-300 py-px">
             <div className="flex justify-between text-brand-dark font-bold border-t border-zinc-300 pt-1 text-xs">
               <span>TOTAL BELANJA:</span>
               <span className="text-primary-brand">

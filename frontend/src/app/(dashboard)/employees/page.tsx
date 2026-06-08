@@ -109,12 +109,6 @@ export default function EmployeePages() {
     }
   };
 
-  const totalEmployee = employees?.length;
-  const totalSalary =
-    employees?.reduce((acc, item) => {
-      const salaryAmount = Number(item.salary) || 0;
-      return acc + salaryAmount;
-    }, 0) || 0;
   const filteredData = employees?.filter((item) => {
     const name = item.name.toLowerCase().includes(search.toLowerCase());
     return name;

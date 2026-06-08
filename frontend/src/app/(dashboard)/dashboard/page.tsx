@@ -72,7 +72,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
+      <div className="flex min-h-100 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-300 border-t-zinc-800" />
       </div>
     );
@@ -263,7 +263,7 @@ export default function DashboardPage() {
             physical cash incoming.
           </p>
         </div>
-        <div className="h-[300px] w-full">
+        <div className="h-75 w-full">
           <Line data={lineChartData} options={lineChartOptions} />
         </div>
       </div>

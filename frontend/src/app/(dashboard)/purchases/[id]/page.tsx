@@ -115,7 +115,7 @@ export default function PurchaseDetailPage() {
             </span>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2 w-full lg:w-auto min-w-70">
+        <div className="grid grid-cols-2 gap-2 w-full lg:w-auto min-w-70">
           <div className="w-full">
             <ButtonNav
               href={`/purchases/${purchase?.id}/edit`}
@@ -137,16 +137,6 @@ export default function PurchaseDetailPage() {
               fullWidth={false}
             >
               Print
-            </ButtonNav>
-          </div>
-          <div className="w-full">
-            <ButtonNav
-              className="w-full justify-center px-3 py-2 text-xs font-semibold rounded-xl"
-              icon={<DollarSignIcon className="w-3.5 h-3.5" />}
-              iconPosition="left"
-              fullWidth={false}
-            >
-              Payment
             </ButtonNav>
           </div>
         </div>

@@ -11,13 +11,14 @@ import {
   ArrowLeft,
   Clock,
   FilePen,
-  Plus,
   FileText,
   DollarSign,
   Calendar,
 } from "lucide-react";
 import ButtonNav from "@/components/ui/button/ButtonNav";
 import StatsCard from "@/components/ui/card/StatsCard";
+import { CustomerPaymentForm } from "@/components/ui/form/CustomerPaymentForm";
+import { BaseModal } from "@/components/ui/modal/BaseModal";
 
 export default function CustomerDetailPage() {
   const router = useRouter();
@@ -27,6 +28,23 @@ export default function CustomerDetailPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  const loadData = async () => {
+    if (!customerId || customerId === "undefined") return;
+    try {
+      setLoading(true);
+      const data = await CustomerService.getCustomer(customerId);
+      setCustomer(data);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        return;
+      }
+      toast.error("Failed to load customer");
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     const fetchCustomer = async () => {
       if (!customerId || customerId === "undefined") return;
@@ -47,6 +65,10 @@ export default function CustomerDetailPage() {
     fetchCustomer();
   }, [customerId]);
 
+  const handlePaymentSuccess = () => {
+    setIsPaymentModalOpen(false);
+    loadData();
+  };
   const totalUnpaidCount =
     customer?.sale?.filter((sale) => sale.status === "unpaid").length || 0;
   const latestPayment =
@@ -88,12 +110,26 @@ export default function CustomerDetailPage() {
               Edit
             </ButtonNav>
             <ButtonNav
-              href={`/payments`}
-              className="bg-brand-dark text-cloud-white hover:bg-brand-primary transition-colors px-3 py-2 text-xs sm:text-sm font-medium"
-              icon={<Plus className="w-3.5 h-3.5" />}
+              onClick={() => setIsPaymentModalOpen(true)}
+              icon={<DollarSign className="w-4 h-4" />}
+              iconPosition="left"
+              variant="secondary"
+              fullWidth={false}
             >
-              Sales
+              Payment
             </ButtonNav>
+            <BaseModal
+              isOpen={isPaymentModalOpen}
+              onClose={() => setIsPaymentModalOpen(false)}
+              title="Pay Supplier Bill"
+              size="md"
+            >
+              <CustomerPaymentForm
+                customerId={Number(customerId)}
+                onSuccess={handlePaymentSuccess}
+                onCancel={() => setIsPaymentModalOpen(false)}
+              />
+            </BaseModal>
           </div>
         </div>
       </div>

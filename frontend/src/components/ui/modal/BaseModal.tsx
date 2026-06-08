@@ -31,7 +31,7 @@ export const BaseModal = ({
         className={`bg-ghost-white border border-foreground/30 w-full ${sizeClasses[size]} max-h-[calc(100vh-2rem)] flex flex-col rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200`}
       >
         {/* Header Modal - Tetap Diam di Atas (Sticky/Fixed) */}
-        <div className="flex justify-between items-center p-6 border-b border-white/5 flex-shrink-0">
+        <div className="flex justify-between items-center p-6 border-b border-white/5 shrink-0">
           <h3 className="text-lg font-bold text-gold-luxury">{title}</h3>
           <button
             onClick={onClose}

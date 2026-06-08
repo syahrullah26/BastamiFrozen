@@ -24,22 +24,29 @@ class SaleController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
             $query = Sale::with('Customer', 'SaleItem', 'SaleItem.Product', 'SaleItem.ProductUnit');
-            $data = $query->latest()->paginate(10);
-            $totalPendingSale = $query->clone()->where('status', 'unpaid')->count();
-            $totalRemainingBill = $query->clone()->where('status', 'unpaid')->sum('remaining_bill');
+            $query->when($request->filled('start_date') && $request->filled('end_date'), function ($q) use ($request) {
+                $q->whereBetween('transaction_date', [$request->start_date, $request->end_date]);
+            });
+            $query->when($request->filled('status') && $request->status !== 'all', function ($q) use ($request) {
+                $q->where('status', $request->status);
+            });
+            $data = (clone $query)->latest()->paginate(10);
 
-            $startDate = Carbon::now()->startOfMonth()->toDateString();
-            $endDate = Carbon::now()->endOfMonth()->toDateString();
-            $monthlyQuery = $query->clone()->whereBetween('transaction_date', [$startDate, $endDate]);
+            $statsQuery = Sale::query();
 
-            $totalMonthlySale = $monthlyQuery->count();
-            $totalMonthlyPaidSale = $monthlyQuery->clone()->where('status', 'paid')->count();
+            $totalPendingSale = (clone $statsQuery)->where('status', 'unpaid')->count();
+            $totalRemainingBill = (clone $statsQuery)->where('status', 'unpaid')->sum('remaining_bill');
 
+            $thisMonthStart = Carbon::now()->startOfMonth()->toDateString();
+            $thisMonthEnd = Carbon::now()->endOfMonth()->toDateString();
+            $monthlyQuery = (clone $statsQuery)->whereBetween('transaction_date', [$thisMonthStart, $thisMonthEnd]);
 
+            $totalMonthlySale = (clone $monthlyQuery)->count();
+            $totalMonthlyPaidSale = $monthlyQuery->where('status', 'paid')->count();
             return response()->json([
                 'status' => true,
                 'message' => 'Fetch Sales Successful',
@@ -49,7 +56,7 @@ class SaleController extends Controller
                             'total_monthly_sale' => $totalMonthlySale,
                             'total_monthly_paid_sale' => $totalMonthlyPaidSale,
                             'total_pending_sale' => $totalPendingSale,
-                            'total_remaining_bill' => $totalRemainingBill,
+                            'total_remaining_bill' => (float) $totalRemainingBill,
                         ]
                     ]
                 ])->response()->getData(true),
@@ -58,7 +65,7 @@ class SaleController extends Controller
             Log::error('sale index error : ' . $e->getMessage());
             return response()->json([
                 'status' => false,
-                'message' => 'Internal Server Error' . $e->getMessage(),
+                'message' => 'Internal Server Error: ' . $e->getMessage(),
             ], 500);
         }
     }

@@ -1,15 +1,25 @@
 import { axiosInstance } from "@/lib/axios";
-import { Attendance, AttendanceRequest, AttendanceStats } from "@/types/employee";
+import {
+  Attendance,
+  AttendanceRequest,
+  AttendanceStats,
+} from "@/types/employee";
 import { ApiResponse, PaginatedApiResponse } from "@/types/apiResponse";
 
 export const AttendanceService = {
   async getAttendances(
     page: number = 1,
+    startDate?: string,
+    endDate?: string,
+    type?: string,
   ): Promise<PaginatedApiResponse<Attendance, AttendanceStats>> {
     try {
       const response = await axiosInstance.get("/attendances", {
         params: {
           page: page,
+          startDate: startDate,
+          endDate: endDate,
+          type,
         },
       });
       return response.data || [];
@@ -20,8 +30,9 @@ export const AttendanceService = {
 
   async getAllAttendances(): Promise<Attendance[]> {
     try {
-      const { data } =
-        await axiosInstance.get<ApiResponse<Attendance[]>>("/attendances/options");
+      const { data } = await axiosInstance.get<ApiResponse<Attendance[]>>(
+        "/attendances/options",
+      );
       return data.data?.data || data.data || [];
     } catch (error) {
       throw error;
