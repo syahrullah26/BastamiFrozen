@@ -13,6 +13,10 @@ import TableData from "@/components/ui/Table/TableData";
 import { BaseModal } from "@/components/ui/modal/BaseModal";
 import ConfirmModal from "@/components/ui/modal/ConfirmModal";
 import { ProductForm } from "@/components/ui/form/ProductForm";
+import ProductsHeader from "./_components/ProdcutHeader";
+import ProductSearch from "./_components/ProductSearch";
+import GlobalLoader from "@/components/ui/common/GlobalLoading";
+import ProductTableHeader from "./_components/ProductTableHeader";
 
 export default function ProductsPage() {
   const [loading, setLoading] = useState(false);
@@ -105,14 +109,7 @@ export default function ProductsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-row items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-brand-dark">
-            Products
-          </h1>
-          <p className="text-xs text-zinc-500 font-medium mt-0.5">
-            Manage and monitor your products
-          </p>
-        </div>
+        <ProductsHeader />
         <ButtonNav
           onClick={handleOpenModal}
           icon={<Plus className="w-4 h-4" />}
@@ -131,34 +128,12 @@ export default function ProductsPage() {
         <ProductForm onSuccess={handleSuccess} onCancel={handleCloseModal} />
       </BaseModal>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1  gap-4">
         <StatsCard
           title="Total Product"
           value={totalItems ? totalItems.toString() : "0"}
           icon={<Package />}
-          bgColor="bg-background/40"
         />
-        <div className="bg-background/40 rounded-xl shadow-xs border border-brand-dark/30 overflow-hidden">
-          <div className="p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-2 shrink-0">
-              <button className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-all border border-zinc-200/50 dark:border-white/10 cursor-pointer">
-                <Filter className="w-4 h-4" /> Filter
-              </button>
-              <div className="h-6 w-px bg-zinc-200 dark:bg-white/10 mx-1" />
-            </div>
-
-            <div className="group w-full sm:max-w-xs flex items-center bg-ghost-white border border-brand-dark/50 rounded-xl px-3 focus-within:border-brand-dark transition-all">
-              <Search className="w-4 h-4 text-zinc-400 group-focus-within:text-brand-dark transition-colors" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-2 pr-2 py-2.5 bg-transparent text-xs focus:outline-none transition-all"
-              />
-            </div>
-          </div>
-        </div>
         <ConfirmModal
           isOpen={isDeleteModalOpen}
           onClose={() => setIsDeleteModalOpen(false)}
@@ -170,12 +145,14 @@ export default function ProductsPage() {
         />
       </div>
 
+      <ProductTableHeader
+        search={search}
+        onSearchChange={(value) => setSearch(value)}
+      />
+
       {loading ? (
         <div className="flex flex-col items-center justify-center h-80 gap-3">
-          <div className="animate-spin rounded-full h-9 w-9 border-t-2 border-b-2 border-brand-dark"></div>
-          <span className="text-xs font-semibold text-zinc-400 animate-pulse">
-            Loading dashboard...
-          </span>
+          <GlobalLoader message="Loading..." fullScreen={false} />
         </div>
       ) : (
         <div className="w-full">

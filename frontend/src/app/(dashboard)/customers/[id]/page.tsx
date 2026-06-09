@@ -19,9 +19,12 @@ import ButtonNav from "@/components/ui/button/ButtonNav";
 import StatsCard from "@/components/ui/card/StatsCard";
 import { CustomerPaymentForm } from "@/components/ui/form/CustomerPaymentForm";
 import { BaseModal } from "@/components/ui/modal/BaseModal";
+import DCBack from "../_components/detail/DCBack";
+import DCHeader from "../_components/detail/DCHeader";
+import DCInformation from "../_components/detail/DCInformation";
+import DCUnpaidTable from "../_components/detail/DCUnpaidTable";
 
 export default function CustomerDetailPage() {
-  const router = useRouter();
   const params = useParams();
   const customerId = params?.id as string;
 
@@ -86,76 +89,19 @@ export default function CustomerDetailPage() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <div className="w-full border-b border-slate-100 pb-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-none">
-            <button
-              onClick={() => router.back()}
-              className="flex items-center gap-1 text-brand-dark hover:text-brand-primary cursor-pointer transition-colors group"
-            >
-              <div className="p-2 rounded-xl group-hover:bg-brand-primary/10 transition-all duration-300">
-                <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-              </div>
-              <span className="text-xs font-black uppercase tracking-[0.2em] pl-1 hidden xs:inline">
-                Back
-              </span>
-            </button>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3 flex-none">
-            <ButtonNav
-              href={`/customers/${customer?.id}/edit`}
-              className="px-3 py-2 text-xs sm:text-sm font-medium"
-              icon={<FilePen className="w-3.5 h-3.5" />}
-            >
-              Edit
-            </ButtonNav>
-            <ButtonNav
-              onClick={() => setIsPaymentModalOpen(true)}
-              icon={<DollarSign className="w-4 h-4" />}
-              iconPosition="left"
-              variant="secondary"
-              fullWidth={false}
-            >
-              Payment
-            </ButtonNav>
-            <BaseModal
-              isOpen={isPaymentModalOpen}
-              onClose={() => setIsPaymentModalOpen(false)}
-              title="Pay Supplier Bill"
-              size="md"
-            >
-              <CustomerPaymentForm
-                customerId={Number(customerId)}
-                onSuccess={handlePaymentSuccess}
-                onCancel={() => setIsPaymentModalOpen(false)}
-              />
-            </BaseModal>
-          </div>
-        </div>
-      </div>
+      <DCHeader
+        isPaymentModalOpen={isPaymentModalOpen}
+        setIsPaymentModalOpen={setIsPaymentModalOpen}
+        customer={customer}
+        customerId={Number(customerId) || 0}
+        onSuccess={handlePaymentSuccess}
+        onCancel={() => setIsPaymentModalOpen(false)}
+      />
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-snow-white p-6 rounded-xl border border-foreground/30 shadow-sm">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-brand-primary">
-            Customer Profile
-          </span>
-          <h1 className="text-2xl md:text-3xl font-black text-brand-dark mt-1">
-            {customer?.name}
-          </h1>
-          <p className="text-sm text-slate-500 mt-2 flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-            {customer?.location || "No Location Listed"}
-          </p>
-        </div>
-        <div className="text-right w-full md:w-auto border-t md:border-t-0 pt-4 md:pt-0 border-slate-100">
-          <span className="text-xs font-bold uppercase tracking-widest text-slate-400 block">
-            Total Remaining Bill
-          </span>
-          <span className="text-2xl font-black text-brand-dark block mt-1">
-            {formatRupiah(totalRemainingBill || 0)}
-          </span>
-        </div>
-      </div>
+      <DCInformation
+        customer={customer}
+        totalRemainingBill={totalRemainingBill}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         <StatsCard
@@ -180,89 +126,7 @@ export default function CustomerDetailPage() {
           iconColor="text-red-400"
         />
       </div>
-      <div className="bg-snow-white border border-slate-100 rounded-xl shadow-sm overflow-hidden mt-2">
-        <div className="p-5 border-b border-slate-100 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-brand-primary" />
-          <h2 className="text-sm font-black uppercase tracking-wider text-brand-dark">
-            Recent Unpaid Transactions
-          </h2>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-primary-brand">
-              <tr className=" text-ghost-white text-xs font-black uppercase tracking-widest">
-                <th className="py-3 px-4">Invoice Number</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Grand Total</th>
-                <th className="py-3 px-4">Remaining Bill</th>
-                <th className="py-3 px-4 text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm">
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="py-8 text-center text-slate-400 font-medium animate-pulse"
-                  >
-                    Loading transactions...
-                  </td>
-                </tr>
-              ) : getRecentSale.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="py-8 text-center text-slate-400 font-medium"
-                  >
-                    No unpaid transactions found.
-                  </td>
-                </tr>
-              ) : (
-                getRecentSale.map((sale, index) => {
-                  const isEven = index % 2 === 0;
-                  return (
-                    <tr
-                      key={sale.id || index}
-                      className={`transition-colors duration-200 hover:bg-brand-primary/20 text-brand-dark font-medium ${
-                        isEven ? "bg-background/40" : "bg-snow-white"
-                      }`}
-                    >
-                      <td className="py-3.5 px-4 font-bold tracking-wide">
-                        {sale.invoice_number ||
-                          `#${sale.id?.toString().slice(0, 8)}`}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-500">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          {formatDate(sale.transaction_date)}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        Rp{" "}
-                        {(sale.amount.total_amount || 0).toLocaleString(
-                          "id-ID",
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-amber-600 font-bold">
-                        Rp{" "}
-                        {(sale.amount.remaining_bill || 0).toLocaleString(
-                          "id-ID",
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="inline-block px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-md bg-amber-50 text-amber-600 border border-amber-200">
-                          {sale.status}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DCUnpaidTable recentSale={getRecentSale} loading={loading} />
     </div>
   );
 }

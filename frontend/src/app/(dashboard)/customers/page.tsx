@@ -14,6 +14,9 @@ import ConfirmModal from "@/components/ui/modal/ConfirmModal";
 import { BaseModal } from "@/components/ui/modal/BaseModal";
 import { CustomerForm } from "@/components/ui/form/CustomerForm";
 import { formatRupiah } from "@/utils/helper";
+import CustomerSearch from "./_components/CustomerSearch";
+import CustomerHeader from "./_components/CustomerHeader";
+import CustomerTableHeader from "./_components/CustomerTableHeader";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -121,14 +124,7 @@ export default function CustomersPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-row items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-brand-dark">
-            Customers
-          </h1>
-          <p className="text-xs text-zinc-500 font-medium mt-0.5">
-            Manage and monitor your customers bills
-          </p>
-        </div>
+        <CustomerHeader />
         <ButtonNav
           onClick={handleOpenModal}
           icon={<Plus className="w-4 h-4" />}
@@ -150,6 +146,7 @@ export default function CustomersPage() {
         <StatsCard
           title="Total Customers"
           value={totalItems}
+          subvalue="Customers"
           icon={<Users className="w-6 h-6" />}
           iconColor="text-primary-brand"
           iconBgColor="bg-primary-brand/10"
@@ -157,6 +154,7 @@ export default function CustomersPage() {
         <StatsCard
           title="Unpaid Invoices"
           value={customerStats.total_unpaid}
+          subvalue="Invoices"
           icon={<FilePen className="w-6 h-6" />}
           iconColor="text-orange-400"
           iconBgColor="bg-orange-400/10"
@@ -169,27 +167,6 @@ export default function CustomersPage() {
           iconBgColor="bg-red-400/10"
         />
       </div>
-      <div className="bg-snow-white rounded-xl shadow-xs border border-brand-dark/30 overflow-hidden">
-        <div className="p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-2 shrink-0">
-            <button className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-all border border-zinc-200/50 dark:border-white/10 cursor-pointer">
-              <Filter className="w-4 h-4" /> Filter
-            </button>
-            <div className="h-6 w-px bg-zinc-200 dark:bg-white/10 mx-1" />
-          </div>
-
-          <div className="group w-full sm:max-w-xs flex items-center bg-ghost-white border border-brand-dark/50 rounded-xl px-3 focus-within:border-brand-dark transition-all">
-            <Search className="w-4 h-4 text-zinc-400 group-focus-within:text-brand-dark transition-colors" />
-            <input
-              type="text"
-              placeholder="Search customers..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-2 pr-2 py-2.5 bg-transparent text-xs focus:outline-none transition-all"
-            />
-          </div>
-        </div>
-      </div>
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}
@@ -201,11 +178,8 @@ export default function CustomersPage() {
         type="delete"
       />
 
-      <div className="flex items-start">
-        <span className="text-xl font-bold text-brand-dark md:text-2xl mt-3.5 ml-3.5">
-          Customer List
-        </span>
-      </div>
+      <CustomerTableHeader search={search} onSearchChange={setSearch} />
+
       <div className="w-full overflow-auto">
         <TableData
           columns={columns}

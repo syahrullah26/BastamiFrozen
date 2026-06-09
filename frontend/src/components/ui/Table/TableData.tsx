@@ -1,6 +1,6 @@
 "use client";
 import React, { ReactNode } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react"; // Import ikon penunjuk halaman
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Column<T> {
   header: ReactNode;
@@ -8,7 +8,6 @@ interface Column<T> {
   className?: string;
 }
 
-// Interface baru untuk menangani properti Pagination
 interface PaginationProps {
   currentPage: number;
   lastPage: number;
@@ -20,7 +19,7 @@ interface TableDataProps<T> {
   columns: Column<T>[];
   data: T[];
   loading?: boolean;
-  pagination?: PaginationProps; // Bersifat opsional agar tabel tetap fleksibel jika tanpa pagination
+  pagination?: PaginationProps;
 }
 
 export default function TableData<T extends { id: string | number }>({
@@ -29,15 +28,12 @@ export default function TableData<T extends { id: string | number }>({
   loading,
   pagination,
 }: TableDataProps<T>) {
-  // Fungsi helper untuk generate nomor halaman di baris tengah (Contoh:)
   const renderPageNumbers = () => {
     if (!pagination) return null;
     const { currentPage, lastPage, onPageChange } = pagination;
     const pages = [];
 
     for (let i = 1; i <= lastPage; i++) {
-      // Logika pemendekan nomor halaman jika total halaman sangat banyak bisa ditambahkan di sini.
-      // Skenario standar menampilkan semua halaman:
       pages.push(
         <button
           key={i}
