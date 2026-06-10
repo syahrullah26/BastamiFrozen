@@ -37,6 +37,9 @@ import {
   SupplierPaymentColumns,
   CustomerPaymentColumns,
 } from "@/constants/DataTable/paymentsData";
+import HeaderPayment from "./_components/HeaderPayment";
+import StatsPayment from "./_components/StatsPayment";
+import FilterPayment from "./_components/FilterPayment";
 
 const emptySubscribe = () => () => {};
 
@@ -235,116 +238,25 @@ export default function PaymentsPage() {
 
   return (
     <div className="space-y-7 p-1">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 border-b border-slate-100 pb-5">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-brand-dark">
-            Payments Financial Ledger
-          </h1>
-          <p className="text-xs text-zinc-500 font-medium mt-1">
-            Monitor cash flow pipelines, review incoming client invoices, and
-            handle supplier expenses.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <ButtonNav
-            onClick={() => setShowCustomerModal(true)}
-            icon={<Plus className="w-4 h-4" />}
-          >
-            New Customer Income
-          </ButtonNav>
-          <ButtonNav
-            onClick={() => setShowSupplierModal(true)}
-            icon={<DollarSign className="w-4 h-4" />}
-            variant="secondary"
-          >
-            New Supplier Payment
-          </ButtonNav>
-        </div>
-      </div>
+      <HeaderPayment
+        setShowCustomerModal={setShowCustomerModal}
+        setShowSupplierModal={setShowSupplierModal}
+      />
+      <StatsPayment
+        customerStats={customerStats}
+        supplierStats={supplierStats}
+        supplierCount={stats.supplierCount}
+        customerCount={stats.customerCount}
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2   gap-5">
-        <StatsCard
-          title="Total Cash Inflow"
-          value={
-            customerStats.total_cash_in_flow
-              ? formatRupiah(customerStats.total_cash_in_flow)
-              : "Rp 0"
-          }
-          icon={<ArrowDownLeft className="w-4 h-4" />}
-          iconBgColor="bg-emerald-500/10"
-          iconColor="text-emerald-500"
-        />
-        <StatsCard
-          title="Total Cash Outflow"
-          value={
-            supplierStats.total_cash_out_flow
-              ? formatRupiah(supplierStats.total_cash_out_flow)
-              : "Rp 0"
-          }
-          icon={<ArrowUpRight className="w-4 h-4" />}
-          iconBgColor="bg-rose-500/10"
-          iconColor="text-rose-500"
-        />
-        <StatsCard
-          title="Client Invoices Handled"
-          value={stats.customerCount}
-          icon={<Users className="w-4 h-4" />}
-          iconBgColor="bg-blue-500/10"
-          iconColor="text-blue-500"
-        />
-        <StatsCard
-          title="Supplier Invoices Handled"
-          value={stats.supplierCount}
-          icon={<TrendingUp className="w-4 h-4" />}
-          iconBgColor="bg-amber-500/10"
-          iconColor="text-amber-500"
-        />
-      </div>
-
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-        <div className="flex bg-slate-100/80 p-1 rounded-xl w-fit border border-slate-200/40">
-          <button
-            onClick={() => {
-              setActiveTab("customer");
-              setSearch("");
-              setCurrentPage(1);
-            }}
-            className={`px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all duration-300 cursor-pointer ${
-              activeTab === "customer"
-                ? "bg-white text-brand-dark shadow-sm"
-                : "text-slate-500 hover:text-brand-dark"
-            }`}
-          >
-            Customer Payments ({stats.customerCount})
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab("supplier");
-              setSearch("");
-              setCurrentPage(1);
-            }}
-            className={`px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all duration-300 cursor-pointer ${
-              activeTab === "supplier"
-                ? "bg-white text-brand-dark shadow-sm"
-                : "text-slate-500 hover:text-brand-dark"
-            }`}
-          >
-            Supplier Payments ({stats.supplierCount})
-          </button>
-        </div>
-        <div className="group relative w-full sm:w-72 bg-white border border-slate-200 focus-within:border-brand-dark rounded-xl px-3 py-2 transition-all duration-200 shadow-sm">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-dark transition-colors">
-            <Search className="w-4 h-4" />
-          </div>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={`Search ${activeTab === "customer" ? "customer name or phone..." : "supplier name..."}`}
-            className="w-full bg-transparent pl-5 text-xs font-medium text-brand-dark focus:outline-none"
-          />
-        </div>
-      </div>
+      <FilterPayment
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        search={search}
+        setSearch={setSearch}
+        setCurrentPage={setCurrentPage}
+        stats={stats}
+      />
 
       <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-4 overflow-hidden">
         {activeTab === "customer" ? (

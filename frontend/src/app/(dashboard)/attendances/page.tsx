@@ -23,6 +23,10 @@ import { AttendanceForm } from "@/components/ui/form/AttendanceForm";
 import { formatRupiah } from "@/utils/helper";
 import { BaseModal } from "@/components/ui/modal/BaseModal";
 import { TYPEATTENDANCE_TABS_CONFIG } from "@/constants/Filter/TypeAttendanceFilterConfig";
+import HeaderAttendance from "./_components/HeaderAttendance";
+import StatsAttendance from "./_components/StatsAttendance";
+import FilterAttendance from "./_components/FilterAttendance";
+import ActiveTabAttendance from "./_components/ActiveTabAttendance";
 
 export default function AttendancePage() {
   const [attendances, setAttendances] = useState<Attendance[]>([]);
@@ -156,122 +160,23 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-row items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-brand-dark">
-            Attendance
-          </h1>
-          <p className="text-xs text-zinc-500 font-medium mt-0.5">
-            Manage and monitor your employee attendances
-          </p>
-        </div>
-        <div className="flex flex-col gap-2">
-          <ButtonNav
-            onClick={handleOpenModal}
-            icon={<Plus className="w-4 h-4" />}
-            iconPosition="left"
-            fullWidth={false}
-          >
-            Add Attendance
-          </ButtonNav>
-        </div>
-      </div>
-      <BaseModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        title="Add Customer"
-        size="md"
-      >
-        <AttendanceForm onSuccess={handleSuccess} onCancel={handleCloseModal} />
-      </BaseModal>
+      <HeaderAttendance
+        handleOpenModal={handleOpenModal}
+        isModalOpen={isModalOpen}
+        handleCloseModal={handleCloseModal}
+        handleSuccess={handleSuccess}
+      />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-8">
-        <StatsCard
-          title="Total Present"
-          value={attendanceStats.total_present}
-          icon={<Check className="w-6 h-6" />}
-          iconBgColor="bg-green-50"
-          iconColor="text-green-600"
-        />
-        <StatsCard
-          title="Total Absent"
-          value={attendanceStats.total_absent}
-          icon={<X className="w-6 h-6" />}
-          iconBgColor="bg-red-50"
-          iconColor="text-red-600"
-        />
-        <StatsCard
-          title="Total Leave"
-          value={attendanceStats.total_leave}
-          icon={<Clock className="w-6 h-6" />}
-          iconBgColor="bg-yellow-50"
-          iconColor="text-yellow-600"
-        />
-      </div>
+      <StatsAttendance attendanceStats={attendanceStats} />
 
-      <div className="grid grid-cols-1 md:gap-8 gap-4">
-        <StatsCard
-          title="Total Salary This Month"
-          value={formatRupiah(attendanceStats.total_salary_expense)}
-          icon={<DollarSign className="w-6 h-6" />}
-          iconBgColor="bg-tertiary-brand/10"
-          iconColor="text-tertiary-brand"
-        />
-      </div>
-
-      <div className="bg-snow-white rounded-xl shadow-xs border border-brand-dark/30 overflow-hidden">
-        <div className="p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-2 bg-zinc-50/50 border border-zinc-200 rounded-xl px-3 py-1.5 shadow-2xs focus-within:bg-white focus-within:border-brand-dark focus-within:ring-4 focus-within:ring-brand-dark/5 transition-all duration-200 flex-1 sm:flex-initial">
-            <div className="flex items-center gap-2 text-zinc-400 shrink-0">
-              <Calendar className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                Period:
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1 w-full">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-transparent text-xs text-zinc-700 font-medium focus:outline-none cursor-pointer w-full scheme-light"
-              />
-
-              <span className="text-zinc-400 text-xs px-0.5">-</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="bg-transparent text-xs text-zinc-700 font-medium focus:outline-none cursor-pointer w-full scheme-light"
-              />
-
-              {(startDate || endDate) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStartDate("");
-                    setEndDate("");
-                  }}
-                  className="text-[10px] font-bold text-rose-500 hover:text-rose-600 ml-1 px-1.5 py-0.5 rounded-md hover:bg-rose-50 cursor-pointer transition-colors"
-                >
-                  Reset
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="group w-full sm:max-w-xs flex items-center bg-ghost-white border border-brand-dark/50 rounded-xl px-3 focus-within:border-brand-dark transition-all">
-            <Search className="w-4 h-4 text-zinc-400 group-focus-within:text-brand-dark transition-colors" />
-            <input
-              type="text"
-              placeholder="Search attendances..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-2 pr-2 py-2.5 bg-transparent text-xs focus:outline-none transition-all"
-            />
-          </div>
-        </div>
-      </div>
+      <FilterAttendance
+        startDate={startDate}
+        setStartDate={setStartDate}
+        endDate={endDate}
+        setEndDate={setEndDate}
+        search={search}
+        setSearch={setSearch}
+      />
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}
@@ -283,31 +188,11 @@ export default function AttendancePage() {
         isLoading={isDeleting}
       />
 
-      <div className="flex md:flex-row flex-col gap-4 md:justify-between justify-center items-center md:items-start">
-        <span className="text-xl font-bold text-brand-dark md:text-2xl mt-3.5 ml-3.5">
-          Your Attendance List (
-          {activeTab === "monthly" ? "This Month" : "History"})
-        </span>
-        <div className="flex items-center gap-1 bg-zinc-100 p-1.5 rounded-xl w-full lg:w-fit overflow-x-auto no-scrollbar">
-          {TYPEATTENDANCE_TABS_CONFIG.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => handleTabChange(tab.id)}
-                className={`flex-1 lg:flex-initial text-center px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? "bg-white text-brand-dark shadow-xs border border-zinc-200/50"
-                    : "text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/30"
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <ActiveTabAttendance
+        activeTab={activeTab}
+        setActiveTab={handleTabChange}
+        TYPEATTENDANCE_TABS_CONFIG={TYPEATTENDANCE_TABS_CONFIG}
+      />
 
       <div className="w-full overflow-auto">
         <TableData

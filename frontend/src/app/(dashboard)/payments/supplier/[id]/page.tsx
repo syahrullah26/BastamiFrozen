@@ -21,6 +21,12 @@ import {
   Receipt,
 } from "lucide-react";
 import ButtonNav from "@/components/ui/button/ButtonNav";
+import HeaderSupplierPayment from "./_components/HeaderSupplierPaymentDetail";
+import BasicInfoSupplier from "./_components/BasicInfoSupplierPayment";
+import RemainingBillSupplierPayment from "./_components/RemainingBillSupplierPayment";
+import LogsSupplierPayment from "./_components/LogsSupplierPayment";
+import MapsSupplierPaymentProps from "./_components/MapsSupplierPayment";
+import AuditFilesSupplierPayment from "./_components/AuditFilesSupplierPayment";
 
 export default function SupplierPaymentDetailPage() {
   const router = useRouter();
@@ -82,325 +88,22 @@ export default function SupplierPaymentDetailPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto p-2">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-brand-dark">
-              SUP-PAY-{payment.payment_date}-00{payment.id}
-            </h1>
-            {isCompleted ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Completed
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 border border-red-200">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                Pending
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-zinc-500 font-medium mt-0.5">
-            Processed on{" "}
-            {payment.payment_date ? formatDate(payment.payment_date) : "-"}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <ButtonNav
-            onClick={() => router.back()}
-            variant="secondary"
-            icon={<ArrowLeft className="w-4 h-4" />}
-            iconPosition="left"
-            fullWidth={false}
-            className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-100 rounded-xl transition-all border border-zinc-200 cursor-pointer"
-          >
-            Back to List
-          </ButtonNav>
-          {/* <ButtonNav
-            onClick={() =>
-              toast.success("Payment receipt printed successfully")
-            }
-            variant="primary"
-            fullWidth={false}
-            icon={<Printer className="w-4 h-4" />}
-            iconPosition="left"
-            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-zinc-800 hover:bg-zinc-900 rounded-xl transition-all shadow-xs cursor-pointer"
-          >
-            Print Receipt
-          </ButtonNav> */}
-        </div>
-      </div>
+      <HeaderSupplierPayment payment={payment} isCompleted={isCompleted} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
-              <h2 className="text-base font-bold text-brand-dark">
-                Payment Information
-              </h2>
-              <ButtonNav
-                href={`/payments/supplier/${payment.id}/edit`}
-                className="flex items-center gap-1 text-xs font-bold text-primary-brand hover:text-primary-brand/80 cursor-pointer"
-                variant="secondary"
-                fullWidth={false}
-              >
-                <FilePen className="w-3.5 h-3.5" /> Edit Transaction
-              </ButtonNav>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div>
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                  Amount Paid
-                </span>
-                <span className="text-xl font-black text-emerald-600">
-                  {formatRupiah(payment.amount)}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                  Payment Date
-                </span>
-                <div className="flex items-center gap-1.5 text-zinc-700 text-sm font-semibold">
-                  <Calendar className="w-4 h-4 text-zinc-400" />
-                  {payment.payment_date
-                    ? formatDate(payment.payment_date)
-                    : "-"}
-                </div>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                  Expense Category
-                </span>
-                <div className="flex items-center gap-1.5 text-zinc-700 text-sm font-semibold">
-                  <Receipt className="w-4 h-4 text-zinc-400" />
-                  <div>
-                    <p className="leading-tight capitalize">
-                      {payment.expense?.type?.replace("_", " ") ||
-                        "Pay Supplier"}
-                    </p>
-                    <p className="text-[11px] text-zinc-400 font-medium">
-                      ID: EXP-{payment.expense?.id || "-"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-zinc-100">
-              <div>
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-2">
-                  Supplier Profile
-                </span>
-                <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 font-bold text-sm border border-emerald-100">
-                    {payment.supplier?.name?.charAt(0) || "S"}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-brand-dark flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-zinc-400" />
-                      {payment.supplier?.name}
-                    </h4>
-                    <p className="text-xs text-zinc-500 font-medium flex items-center gap-1.5 mt-0.5">
-                      <Phone className="w-3.5 h-3.5 text-zinc-400" />
-                      {payment.supplier?.information.phone || "-"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-2">
-                  Warehouse Location
-                </span>
-                <div className="flex items-start gap-2 text-zinc-600 text-xs font-medium leading-relaxed">
-                  <MapPin className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
-                  <span>
-                    {payment.supplier?.information.address ||
-                      "No address details available."}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {payment.notes && (
-              <div className="pt-4 border-t border-zinc-100">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">
-                  Transaction Notes
-                </span>
-                <div className="bg-zinc-50 border border-zinc-200/60 rounded-xl p-3 text-xs font-semibold text-zinc-600 italic border-l-4 border-l-emerald-500">
-                  {' " '}
-                  {payment.notes}
-                  {' " '}
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs p-6 space-y-4">
-            <h3 className="text-base font-bold text-brand-dark">
-              System Ledger Logs
-            </h3>
-            <div className="relative border-l border-zinc-200 pl-6 ml-3 space-y-6">
-              <div className="relative">
-                <span className="absolute -left-7.75 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 ring-4 ring-white">
-                  <CheckCircle2 className="h-3 w-3 text-white" />
-                </span>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                  <h4 className="text-xs font-bold text-brand-dark">
-                    Expense Created
-                  </h4>
-                  <span className="text-[10px] font-medium text-zinc-400 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />{" "}
-                    {formatTimeOnly(payment.created_at)} WIB
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-500 font-medium mt-0.5">
-                  Automated statement processing verified under reference record
-                  ID #{payment.expense?.id}.
-                </p>
-              </div>
-
-              <div className="relative">
-                <span className="absolute -left-7.75 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-800 ring-4 ring-white">
-                  <CreditCard className="h-2.5 w-2.5 text-white" />
-                </span>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                  <h4 className="text-xs font-bold text-brand-dark">
-                    Edit Payment
-                  </h4>
-                  <span className="text-[10px] font-medium text-zinc-400 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />{" "}
-                    {formatTimeOnly(payment.updated_at)} WIB
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-500 font-medium mt-0.5">
-                  Supplier data edited safely.
-                </p>
-              </div>
-            </div>
-          </div>
+          <BasicInfoSupplier payment={payment} />
+          <LogsSupplierPayment payment={payment} />
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs p-6 space-y-4">
-            <div>
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">
-                Financial Statement
-              </span>
-              <h3 className="text-xs font-semibold text-zinc-400">
-                Remaining Bill to Supplier
-              </h3>
-            </div>
-
-            <div className="text-2xl font-black text-red-500">
-              {formatRupiah(payment.supplier?.remaining_bill || 0)}
-            </div>
-
-            <div className="space-y-1">
-              <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                  style={{ width: `${paymentPercentage}%` }}
-                />
-              </div>
-              <p className="text-[10px] text-zinc-400 font-semibold italic">
-                {paymentPercentage}% of total wholesale history (
-                {formatRupiah(totalOrderEstimate)}) has been settled.
-              </p>
-            </div>
-
-            <button
-              onClick={() =>
-                toast.success("Navigating to records management framework")
-              }
-              className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all cursor-pointer"
-            >
-              <CreditCard className="w-4 h-4" /> Pay Remaining Balance
-            </button>
-          </div>
-          <div className="relative overflow-hidden rounded-2xl border border-zinc-200/80 shadow-xs aspect-video bg-zinc-900 flex flex-col justify-between p-4 group">
-            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#10b981_1px,transparent_1px)] bg-size-[16px_16px]" />
-            <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent z-0" />
-
-            <div className="z-10" />
-
-            <div className="z-10 text-white space-y-1">
-              <span className="text-[9px] font-bold tracking-wider uppercase text-emerald-400 flex items-center gap-1">
-                <MapPin className="w-3 h-3" /> Target Address
-              </span>
-              <h4 className="text-xs font-black truncate max-w-full">
-                {payment.supplier?.information.address ||
-                  "No Address Configuration"}
-              </h4>
-              {payment.supplier?.information.address &&
-                payment.supplier?.information.address !== "-" && (
-                  <a
-                    href={`https://maps.google.com/?q=${encodeURIComponent(payment.supplier?.information.address)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors mt-1"
-                  >
-                    Open in Google Maps <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs p-6 space-y-4">
-            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-              Linked Audit Files
-            </h3>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 border border-zinc-100 bg-zinc-50/50 rounded-xl hover:border-zinc-200 transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-600">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h5 className="text-xs font-bold text-brand-dark">
-                      Expense Log Ledger
-                    </h5>
-                    <p className="text-[10px] text-zinc-400 font-medium">
-                      Automatic System Log
-                    </p>
-                  </div>
-                </div>
-                <ButtonNav
-                  href={`/suppliers/${payment.supplier?.id}`}
-                  icon={<ExternalLink className="w-4 h-4" />}
-                  fullWidth={false}
-                  variant="secondary"
-                  className="text-zinc-400 hover:text-brand-dark transition-colors cursor-pointer"
-                />
-              </div>
-
-              {/* <div className="flex items-center justify-between p-3 border border-zinc-100 bg-zinc-50/50 rounded-xl hover:border-zinc-200 transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-50 border border-purple-100 rounded-lg text-purple-600">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h5 className="text-xs font-bold text-brand-dark">
-                      Purchase Invoice
-                    </h5>
-                    <p className="text-[10px] text-zinc-400 font-medium">
-                      PDF Document
-                    </p>
-                  </div>
-                </div>
-                <ButtonNav
-                  onClick={() =>
-                    toast.success("Button Print Pressed Successfully")
-                  }
-                  icon={<Download className="w-4 h-4" />}
-                  fullWidth={false}
-                  variant="secondary"
-                  className="text-zinc-400 hover:text-brand-dark transition-colors cursor-pointer"
-                />
-              </div> */}
-            </div>
-          </div>
+          <RemainingBillSupplierPayment
+            payment={payment}
+            paymentPercentage={paymentPercentage}
+            totalOrderEstimate={totalOrderEstimate}
+          />
+          <MapsSupplierPaymentProps payment={payment} />
+          <AuditFilesSupplierPayment id={payment?.supplier?.id} />
         </div>
       </div>
     </div>
