@@ -43,16 +43,21 @@ export default function DCHeader({
           >
             Edit
           </ButtonNav>
-          <ButtonNav
-            onClick={() => setIsPaymentModalOpen(true)}
-            icon={<DollarSign className="w-3.5 h-3.5" />}
-            iconPosition="left"
-            className="px-3.5 py-2 text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 rounded-xl transition-all shadow-sm cursor-pointer"
-          >
-            Payment
-          </ButtonNav>
+
+          {customer && (
+            <ButtonNav
+              onClick={() => setIsPaymentModalOpen(true)}
+              icon={<DollarSign className="w-3.5 h-3.5" />}
+              iconPosition="left"
+              className="px-3.5 py-2 text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:bg-brand-dark/80 disabled:text-zinc-200 disabled:cursor-not-allowed"
+              disabled={Number(customer.remaining_bill || 0) <= 0}
+            >
+              Payment
+            </ButtonNav>
+          )}
         </div>
       </div>
+
       <BaseModal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
@@ -66,6 +71,7 @@ export default function DCHeader({
             setIsPaymentModalOpen(false);
             onCancel();
           }}
+          amount={customer?.remaining_bill}
         />
       </BaseModal>
     </>

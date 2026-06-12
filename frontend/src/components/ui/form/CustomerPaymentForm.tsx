@@ -10,17 +10,20 @@ import { FloatingInput } from "@/components/ui/input/FloatingInput";
 import { Save } from "lucide-react";
 import ButtonLoad from "@/components/ui/button/ButtonLoad";
 import SearchableSelect from "../input/select/SearchableOptions";
+import { formatRupiah } from "@/utils/helper";
 
 interface CustomerPaymentFormProps {
   onSuccess: () => void;
   onCancel: () => void;
   customerId?: number;
+  amount?: number;
 }
 
 export const CustomerPaymentForm = ({
   onSuccess,
   onCancel,
   customerId,
+  amount,
 }: CustomerPaymentFormProps) => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -52,10 +55,10 @@ export const CustomerPaymentForm = ({
     fetchCustomers();
   }, [customerId]);
 
-  const handleCustomerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedId = parseInt(e.target.value, 10);
-    setFormData((prev) => ({ ...prev, customer_id: selectedId }));
-  };
+  // const handleCustomerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //   const selectedId = parseInt(e.target.value, 10);
+  //   setFormData((prev) => ({ ...prev, customer_id: selectedId }));
+  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +70,10 @@ export const CustomerPaymentForm = ({
     };
     if (!payload.customer_id || !payload.amount || !payload.payment_date) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+    if (amount && payload.amount > amount) {
+      toast.error("Payment amount cannot be greater than due amount");
       return;
     }
     try {
@@ -105,23 +112,46 @@ export const CustomerPaymentForm = ({
               }))}
               value={formData.customer_id}
               onChange={(value) =>
-                setFormData((prev) => ({ ...prev, customer_id: Number(value) }))
+                setFormData((prev) => ({
+                  ...prev,
+                  customer_id: Number(value),
+                }))
               }
               required
             />
           </div>
         )}
-        <FloatingInput
-          label="Amount"
-          value={formData.amount}
-          onChange={(e) =>
-            setFormData((prev) => ({
-              ...prev,
-              amount: parseFloat(e.target.value),
-            }))
-          }
-          type="number"
-        />
+        <div className="space-y-1.5">
+          <FloatingInput
+            label="Amount"
+            type="number"
+            value={formData.amount || ""}
+            max={amount}
+            required
+            onChange={(e) => {
+              const inputValue = parseFloat(e.target.value) || 0;
+              const finalValue =
+                amount && inputValue > amount ? amount : inputValue;
+
+              setFormData((prev) => ({
+                ...prev,
+                amount: finalValue,
+              }));
+            }}
+          />
+          {amount !== undefined && amount !== null && (
+            <span
+              className={`text-[11px] font-medium tracking-wide block px-1 ${
+                formData.amount >= amount
+                  ? "text-rose-500 font-bold"
+                  : "text-zinc-400"
+              }`}
+            >
+              *max amount is:{" "}
+              <span className="font-mono">{formatRupiah(amount)}</span>
+            </span>
+          )}
+        </div>
         <FloatingInput
           label="Payment Date"
           value={formData.payment_date}

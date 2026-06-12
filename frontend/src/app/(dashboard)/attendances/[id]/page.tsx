@@ -1,53 +1,29 @@
 "use client";
-import React, { useState, useEffect, useSyncExternalStore } from "react";
-import { useRouter, useParams } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
 import { AttendanceService } from "@/services/attendanceService"; // Asumsi nama service Anda
-import { formatRupiah, formatDate } from "@/utils/helper";
 
-import {
-  ArrowLeft,
-  FilePen,
-  Calendar,
-  User,
-  FileText,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Wallet,
-  Building,
-} from "lucide-react";
-import ButtonNav from "@/components/ui/button/ButtonNav";
+import { FileText, Clock } from "lucide-react";
 import { Attendance } from "@/types/employee";
 import GlobalLoader from "@/components/ui/common/GlobalLoading";
 import HeaderAttendanceDetail from "./_components/HeaderAttendanceDetail";
 import InformationAttendanceDetail from "./_components/InformationAttendanceDetail";
 import { statusConfig } from "@/constants/config/StatusAttendanceConfig";
 
-const emptySubscribe = () => () => {};
-
 export default function AttendanceDetailPage() {
-  const router = useRouter();
   const params = useParams();
   const id = params.id as string;
 
   const [attendance, setAttendance] = useState<Attendance | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isClient = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
-
   useEffect(() => {
     if (!id || id === "undefined") return;
     const loadAttendance = async () => {
       try {
         setLoading(true);
-        // Sesuaikan endpoint service dengan method pemicu data Anda
         const data = await AttendanceService.getAttendance(id);
         setAttendance(data);
       } catch (error) {

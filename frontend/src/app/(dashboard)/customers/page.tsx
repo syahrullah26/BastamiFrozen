@@ -7,14 +7,13 @@ import { CustomerService } from "@/services/customerService";
 import { Customer, CustomerStats } from "@/types/customer";
 import TableData from "@/components/ui/Table/TableData";
 import ButtonNav from "@/components/ui/button/ButtonNav";
-import { Plus, Search, Filter, Users, DollarSign, FilePen } from "lucide-react";
+import { Plus, Users, DollarSign, FilePen } from "lucide-react";
 import StatsCard from "@/components/ui/card/StatsCard";
 import { CustomerColumns } from "@/constants/DataTable/customerData";
 import ConfirmModal from "@/components/ui/modal/ConfirmModal";
 import { BaseModal } from "@/components/ui/modal/BaseModal";
 import { CustomerForm } from "@/components/ui/form/CustomerForm";
 import { formatRupiah } from "@/utils/helper";
-import CustomerSearch from "./_components/CustomerSearch";
 import CustomerHeader from "./_components/CustomerHeader";
 import CustomerTableHeader from "./_components/CustomerTableHeader";
 

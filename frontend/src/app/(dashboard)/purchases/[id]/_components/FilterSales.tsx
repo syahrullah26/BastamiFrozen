@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Filter, Calendar, Search } from "lucide-react";
+import { Calendar, Search } from "lucide-react";
 import SyncHppButton from "@/components/ui/button/SyncHppButton";
 
 interface FilterSalesProps {
@@ -24,7 +24,7 @@ export default function FilterSales({
   endDate,
   setEndDate,
   handleSuccess,
-  onFilterClick,
+
   placeholder = "Search sales...",
 }: FilterSalesProps) {
   const handleResetPeriod = () => {

@@ -7,6 +7,7 @@ interface ButtonNavProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   iconPosition?: "left" | "right";
   fullWidth?: boolean;
   variant?: "primary" | "secondary" | "danger" | "neutral";
+  disabled?: boolean;
 }
 
 export default function ButtonNav({
@@ -16,6 +17,7 @@ export default function ButtonNav({
   iconPosition = "right",
   fullWidth = true,
   variant = "primary",
+  disabled = false,
   className = "",
   ...props
 }: ButtonNavProps) {
@@ -23,7 +25,7 @@ export default function ButtonNav({
     group relative overflow-hidden flex items-center justify-center gap-2
     py-2.5 font-semibold text-xs uppercase tracking-wider
     rounded-xl shadow-[0_2px_8px_-3px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.12)]
-    transition-all duration-300 ease-in-out cursor-pointer 
+    transition-all duration-300 ease-in-out  
     active:scale-[0.97] select-none border
     ${fullWidth ? "w-full" : "px-5"}
   `;
@@ -71,7 +73,12 @@ export default function ButtonNav({
   }
 
   return (
-    <button type="button" className={combinedClassName} {...props}>
+    <button
+      type="button"
+      className={combinedClassName}
+      disabled={disabled}
+      {...props}
+    >
       {shimmerElement}
       {icon && iconPosition === "left" && renderIcon()}
       <span className="relative z-10">{children}</span>

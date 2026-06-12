@@ -1,37 +1,17 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useSyncExternalStore,
-} from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { ExpenseService } from "@/services/expenseService";
 import { Expense, ExpenseStats } from "@/types/expense";
 import { ExpenseColumns } from "@/constants/DataTable/expenseData";
 import TableData from "@/components/ui/Table/TableData";
-import ButtonNav from "@/components/ui/button/ButtonNav";
-import {
-  Plus,
-  Search,
-  Filter,
-  FileText,
-  FileBox,
-  BanknoteArrowDown,
-} from "lucide-react";
-import StatsCard from "@/components/ui/card/StatsCard";
 import ConfirmModal from "@/components/ui/modal/ConfirmModal";
-import { BaseModal } from "@/components/ui/modal/BaseModal";
-import { ExpenseForm } from "@/components/ui/form/ExpenseForm";
-import { formatRupiah } from "@/utils/helper";
 import HeaderExpense from "./_components/HeaderExpense";
 import StatsExpense from "./_components/StatsExpense";
 import TableHeaderExpense from "./_components/TableHeaderExpense";
 
-const emptySubscribe = () => () => {};
 export default function ExpensePage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,12 +32,6 @@ export default function ExpensePage() {
     total_monthly_salary_expense: 0,
     total_monthly_supplier_expense: 0,
   });
-
-  const isClient = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
 
   const loadData = useCallback(async (pageNumber = 1) => {
     try {
@@ -143,11 +117,12 @@ export default function ExpensePage() {
     [handleDeleteClick],
   );
 
-  const TableHeaderExpenseComponent = TableHeaderExpense as unknown as React.ComponentType<{
-    search: string;
-    setSearch: React.Dispatch<React.SetStateAction<string>>;
-    placeholder?: string;
-  }>;
+  const TableHeaderExpenseComponent =
+    TableHeaderExpense as unknown as React.ComponentType<{
+      search: string;
+      setSearch: React.Dispatch<React.SetStateAction<string>>;
+      placeholder?: string;
+    }>;
 
   return (
     <div className="space-y-6">

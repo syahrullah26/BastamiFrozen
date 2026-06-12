@@ -6,7 +6,7 @@ import { ProductService } from "@/services/productService";
 import { Product } from "@/types/product";
 import { ProductColumns } from "@/constants/DataTable/productData";
 import ButtonNav from "@/components/ui/button/ButtonNav";
-import { Plus, Search, Filter, Package } from "lucide-react";
+import { Plus, Package } from "lucide-react";
 import axios from "axios";
 import StatsCard from "@/components/ui/card/StatsCard";
 import TableData from "@/components/ui/Table/TableData";
@@ -14,7 +14,6 @@ import { BaseModal } from "@/components/ui/modal/BaseModal";
 import ConfirmModal from "@/components/ui/modal/ConfirmModal";
 import { ProductForm } from "@/components/ui/form/ProductForm";
 import ProductsHeader from "./_components/ProdcutHeader";
-import ProductSearch from "./_components/ProductSearch";
 import GlobalLoader from "@/components/ui/common/GlobalLoading";
 import ProductTableHeader from "./_components/ProductTableHeader";
 

@@ -1,22 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { EmployeeService } from "@/services/employeeService";
 import { Employee } from "@/types/employee";
 import { toast } from "sonner";
 import axios from "axios";
-import { formatDate, formatRupiah } from "@/utils/helper";
-import { ArrowLeft, Clock, FilePen, DollarSign, Calendar } from "lucide-react";
-import ButtonNav from "@/components/ui/button/ButtonNav";
-import StatsCard from "@/components/ui/card/StatsCard";
 import HeaderEmployeeDetail from "./_components/HeaderEmployeeDetail";
 import InformationEmployeeDetail from "./_components/InformationEmployeeDetail";
 import StatsCardEmployeeDetail from "./_components/StatsEmployeeDetail";
 import TableEmployeeDetail from "./_components/TableEmployeeDetail";
 
 export default function EmployeeDetailPage() {
-  const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
 

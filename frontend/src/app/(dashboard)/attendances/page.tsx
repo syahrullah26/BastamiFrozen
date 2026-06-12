@@ -6,22 +6,8 @@ import { toast } from "sonner";
 import { AttendanceService } from "@/services/attendanceService";
 import { Attendance, AttendanceStats } from "@/types/employee";
 import TableData from "@/components/ui/Table/TableData";
-import ButtonNav from "@/components/ui/button/ButtonNav";
-import StatsCard from "@/components/ui/card/StatsCard";
-import {
-  Plus,
-  Search,
-  Check,
-  X,
-  Clock,
-  DollarSign,
-  Calendar,
-} from "lucide-react";
 import ConfirmModal from "@/components/ui/modal/ConfirmModal";
 import { AttendanceColumns } from "@/constants/DataTable/attendanceData";
-import { AttendanceForm } from "@/components/ui/form/AttendanceForm";
-import { formatRupiah } from "@/utils/helper";
-import { BaseModal } from "@/components/ui/modal/BaseModal";
 import { TYPEATTENDANCE_TABS_CONFIG } from "@/constants/Filter/TypeAttendanceFilterConfig";
 import HeaderAttendance from "./_components/HeaderAttendance";
 import StatsAttendance from "./_components/StatsAttendance";

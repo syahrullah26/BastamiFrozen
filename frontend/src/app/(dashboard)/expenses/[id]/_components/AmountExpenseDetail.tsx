@@ -107,13 +107,13 @@ export default function AmountExpenseDetail({
       )}
 
       {expense.type !== "pay_supplier" && expense.type !== "salary" && (
-        <div className="bg-zinc-50/50 border border-dashed border-zinc-200 rounded-2xl p-6 text-center flex flex-col items-center justify-center gap-2 h-full min-h-[160px]">
+        <div className="bg-zinc-50/50 border border-dashed border-zinc-200 rounded-2xl p-6 text-center flex flex-col items-center justify-center gap-2 h-full min-h-40">
           <Briefcase className="w-5 h-5 text-zinc-300 stroke-1.5" />
           <div className="space-y-0.5">
             <p className="text-xs font-bold text-zinc-500">
               Standalone Expense
             </p>
-            <p className="text-[10px] text-zinc-400 max-w-[180px] mx-auto leading-normal">
+            <p className="text-[10px] text-zinc-400 max-w-45 mx-auto leading-normal">
               This transaction is categorized as direct business overhead cost.
             </p>
           </div>

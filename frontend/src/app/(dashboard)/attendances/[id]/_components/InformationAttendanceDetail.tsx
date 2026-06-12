@@ -121,13 +121,13 @@ export default function InformationAttendanceDetail({
             </div>
           </div>
         ) : (
-          <div className="bg-zinc-50/50 border border-dashed border-zinc-200 rounded-2xl p-6 text-center flex flex-col items-center justify-center gap-2 h-full min-h-[180px]">
+          <div className="bg-zinc-50/50 border border-dashed border-zinc-200 rounded-2xl p-6 text-center flex flex-col items-center justify-center gap-2 h-full min-h-45">
             <Building className="w-5 h-5 text-zinc-300 stroke-1.5" />
             <div className="space-y-0.5">
               <p className="text-xs font-bold text-zinc-500">
                 No Payout Generated
               </p>
-              <p className="text-[10px] text-zinc-400 max-w-[190px] mx-auto leading-normal">
+              <p className="text-[10px] text-zinc-400 max-w-47.5 mx-auto leading-normal">
                 This attendance log did not trigger an automated salary expense
                 ledger entry.
               </p>

@@ -5,22 +5,9 @@ import axios from "axios";
 import { toast } from "sonner";
 import { PaymentService } from "@/services/paymentService";
 import { SupplierPayment } from "@/types/payment";
-import { formatRupiah, formatDate, formatTimeOnly } from "@/utils/helper";
 import {
   ArrowLeft,
-  FilePen,
-  Calendar,
-  User,
-  FileText,
-  Clock,
-  MapPin,
-  Phone,
-  CheckCircle2,
-  CreditCard,
-  ExternalLink,
-  Receipt,
 } from "lucide-react";
-import ButtonNav from "@/components/ui/button/ButtonNav";
 import HeaderSupplierPayment from "./_components/HeaderSupplierPaymentDetail";
 import BasicInfoSupplier from "./_components/BasicInfoSupplierPayment";
 import RemainingBillSupplierPayment from "./_components/RemainingBillSupplierPayment";

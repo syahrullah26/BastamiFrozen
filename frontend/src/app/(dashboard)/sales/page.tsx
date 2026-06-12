@@ -5,33 +5,15 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
-  useSyncExternalStore,
   useRef,
 } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { SaleService } from "@/services/saleService";
 import { Sale, SaleStats, StatusFilter } from "@/types/sale";
-import ButtonNav from "@/components/ui/button/ButtonNav";
-import {
-  Plus,
-  Search,
-  Filter,
-  Clock,
-  Calendar,
-  Receipt,
-  DollarSign,
-  DollarSignIcon,
-} from "lucide-react";
 import TableData from "@/components/ui/Table/TableData";
-import StatsCard from "@/components/ui/card/StatsCard";
 import ConfirmModal from "@/components/ui/modal/ConfirmModal";
-import { formatRupiah } from "@/utils/helper";
 import { SaleColumns } from "@/constants/DataTable/saleData";
-import { SaleForm } from "@/components/ui/form/SaleForm";
-import { BaseModal } from "@/components/ui/modal/BaseModal";
-import SyncHppButton from "@/components/ui/button/SyncHppButton";
-import { CustomerPaymentForm } from "@/components/ui/form/CustomerPaymentForm";
 import { FakturReceipt } from "@/components/ui/print/faktur/FakturReceipt";
 import { useReactToPrint } from "react-to-print";
 import { useStatusFilter } from "@/hooks/useStatusFilter";
@@ -41,7 +23,6 @@ import StatsCardSales from "./_components/StatsCardSales";
 import FilterSales from "../purchases/[id]/_components/FilterSales";
 import ActiveTabSales from "./_components/ActiveTabSales";
 
-const emptySubscribe = () => () => {};
 
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -80,11 +61,7 @@ export default function SalesPage() {
   const printRef = useRef<HTMLDivElement>(null);
   const [printData, setPrintData] = useState<Sale | null>(null);
 
-  const isClient = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
+
 
   const loadData = useCallback(
     async (
@@ -141,15 +118,15 @@ export default function SalesPage() {
     };
   }, [loadData, currentPage, activeTab, startDate, endDate]);
 
-  const handleTabChange = (status: StatusFilter) => {
-    setActiveTab(status);
-    setCurrentPage(1);
-  };
+  // const handleTabChange = (status: StatusFilter) => {
+  //   setActiveTab(status);
+  //   setCurrentPage(1);
+  // };
 
   const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => setIsModalOpen(false);
+  // const handleCloseModal = () => setIsModalOpen(false);
   const handleOpenPaymentModal = () => setIsModalPaymentOpen(true);
-  const handleClosePaymentModal = () => setIsModalPaymentOpen(false);
+  // const handleClosePaymentModal = () => setIsModalPaymentOpen(false);
 
   const handleDeleteClick = useCallback((id: number, name: string) => {
     setSelectedSale({ id, name });

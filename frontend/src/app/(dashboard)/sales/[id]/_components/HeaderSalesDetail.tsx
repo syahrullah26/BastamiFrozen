@@ -2,21 +2,39 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Calendar, Box, FilePen, Printer } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Box,
+  FilePen,
+  Printer,
+  CreditCard,
+} from "lucide-react";
 import ButtonNav from "@/components/ui/button/ButtonNav";
 import { formatDate } from "@/utils/helper";
 import { Sale } from "@/types/sale";
+import { BaseModal } from "@/components/ui/modal/BaseModal";
+import { CustomerPaymentForm } from "@/components/ui/form/CustomerPaymentForm";
 
 interface HeaderSalesDetailProps {
   sale: Sale | null;
   handlePrint: () => void;
+  handlePaymentSuccess: () => void;
+  handlePaymentCancel: () => void;
+  isModalPaymentOpen: boolean;
+  setIsModalPaymentOpen: (isModalPaymentOpen: boolean) => void;
 }
 
 export default function HeaderSalesDetail({
   sale,
   handlePrint,
+  handlePaymentSuccess,
+  handlePaymentCancel,
+  isModalPaymentOpen,
+  setIsModalPaymentOpen,
 }: HeaderSalesDetailProps) {
   const router = useRouter();
+  const remainingBill = sale?.amount.remaining_bill || 0;
 
   return (
     <div className="space-y-4">
@@ -71,7 +89,9 @@ export default function HeaderSalesDetail({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 w-full lg:w-auto min-w-70">
+        <div
+          className={`grid ${remainingBill > 0 ? "grid-cols-3" : "grid-cols-2"} gap-2 w-full lg:w-auto min-w-70`}
+        >
           <div className="w-full">
             <ButtonNav
               href={`/sales/${sale?.id}/edit`}
@@ -96,6 +116,33 @@ export default function HeaderSalesDetail({
               Print
             </ButtonNav>
           </div>
+          {remainingBill > 0 && (
+            <div className="w-full">
+              <ButtonNav
+                onClick={() => setIsModalPaymentOpen(true)}
+                className="w-full justify-center px-3 py-2 text-xs font-semibold rounded-xl"
+                icon={<CreditCard className="w-3.5 h-3.5" />}
+                iconPosition="left"
+                variant="primary"
+                fullWidth={false}
+              >
+                Payment
+              </ButtonNav>
+              <BaseModal
+                title="Customer Payment"
+                isOpen={isModalPaymentOpen}
+                onClose={handlePaymentCancel}
+                size="md"
+              >
+                <CustomerPaymentForm
+                  onSuccess={handlePaymentSuccess}
+                  onCancel={handlePaymentCancel}
+                  customerId={sale?.customer_id}
+                  amount={remainingBill}
+                />
+              </BaseModal>
+            </div>
+          )}
         </div>
       </div>
     </div>

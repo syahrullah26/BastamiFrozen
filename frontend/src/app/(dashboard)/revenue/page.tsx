@@ -4,25 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { FinancialReport } from "@/types/financialReport";
 import { FinancialReportService } from "@/services/financialReportService";
-import TableData from "@/components/ui/Table/TableData";
-import { formatRupiah } from "@/utils/helper";
 import { expenseColumns } from "@/constants/DataTable/financialReportData";
-import { FloatingInput } from "@/components/ui/input/FloatingInput";
-import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  ShoppingBag,
-  Percent,
-  Receipt,
-  Layers,
-  Scale,
-  Calendar,
-  AlertCircle,
-  Loader2,
-  Activity,
-  PieChart,
-} from "lucide-react";
 import HeaderRevenue from "./_components/HeaderRevenue";
 import GlobalLoader from "@/components/ui/common/GlobalLoading";
 import AlertRevenue from "./_components/AlertRevenue";

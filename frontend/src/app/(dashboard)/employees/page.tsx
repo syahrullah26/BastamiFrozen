@@ -6,22 +6,8 @@ import { toast } from "sonner";
 import { EmployeeService } from "@/services/employeeService";
 import { Employee, EmployeeStats } from "@/types/employee";
 import TableData from "@/components/ui/Table/TableData";
-import ButtonNav from "@/components/ui/button/ButtonNav";
-import {
-  Plus,
-  Search,
-  Filter,
-  Users,
-  DollarSign,
-  Calendar,
-} from "lucide-react";
-import StatsCard from "@/components/ui/card/StatsCard";
 import ConfirmModal from "@/components/ui/modal/ConfirmModal";
-import { BaseModal } from "@/components/ui/modal/BaseModal";
 import { EmployeeColumns } from "@/constants/DataTable/employeeData";
-import { EmployeeForm } from "@/components/ui/form/EmployeeForm";
-import { formatRupiah } from "@/utils/helper";
-import { AttendanceForm } from "@/components/ui/form/AttendanceForm";
 import HeaderEmployee from "./_components/HeaderEmployee";
 import StatsCardEmployee from "./_components/StatsCardEmployee";
 import TableHeaderEmployee from "./_components/TableHeaderEmployee";

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import React, {
@@ -12,13 +12,10 @@ import { toast } from "sonner";
 import { SupplierService } from "@/services/supplierService";
 import { Supplier, SupplierStats } from "@/types/supplier";
 import TableData from "@/components/ui/Table/TableData";
-import ButtonNav from "@/components/ui/button/ButtonNav";
-import { Plus, Search, Filter, Users, Receipt, DollarSign } from "lucide-react";
+import {   Users, Receipt, DollarSign } from "lucide-react";
 import StatsCard from "@/components/ui/card/StatsCard";
 import ConfirmModal from "@/components/ui/modal/ConfirmModal";
-import { BaseModal } from "@/components/ui/modal/BaseModal";
 import { SupplierColumns } from "@/constants/DataTable/supplierData";
-import { SupplierForm } from "@/components/ui/form/SupplierForm";
 import { formatRupiah } from "@/utils/helper";
 import SupplierHeader from "./_components/SupplierHeader";
 import SupplierTableHeader from "./_components/SupplierTableHeader";
@@ -94,7 +91,7 @@ export default function SuppliersPage() {
   }, [currentPage, loadData]);
 
   const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => setIsModalOpen(false);
+  // const handleCloseModal = () => setIsModalOpen(false);
 
   const handleSuccess = () => loadData(1);
 

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Sale } from "@/types/sale";
-import { formatRupiah, formatDate } from "@/utils/helper";
+import { formatDate } from "@/utils/helper";
 import { Calendar, Clock } from "lucide-react";
 
 interface DCUnpaidTableProps {

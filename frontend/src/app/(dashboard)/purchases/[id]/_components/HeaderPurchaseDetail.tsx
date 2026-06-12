@@ -2,18 +2,35 @@
 import React from "react";
 import { Purchase } from "@/types/purchase";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, BoxIcon, Calendar, FilePen, Printer } from "lucide-react";
+import {
+  ArrowLeft,
+  BoxIcon,
+  Calendar,
+  CreditCard,
+  FilePen,
+} from "lucide-react";
 import ButtonNav from "@/components/ui/button/ButtonNav";
 import { formatDate } from "@/utils/helper";
+import { BaseModal } from "@/components/ui/modal/BaseModal";
+import { SupplierPaymentForm } from "@/components/ui/form/SupplierPaymentForm";
 
 interface HeaderPurchaseDetailProps {
   purchase: Purchase | null;
+  isModalPaymentOpen: boolean;
+  setIsModalPaymentOpen: (isModalPaymentOpen: boolean) => void;
+  handlePaymentSuccess: () => void;
+  handlePaymentCancel: () => void;
 }
 
 export default function HeaderPurchaeDetail({
   purchase,
+  isModalPaymentOpen,
+  setIsModalPaymentOpen,
+  handlePaymentSuccess,
+  handlePaymentCancel,
 }: HeaderPurchaseDetailProps) {
   const router = useRouter();
+  const remainingBill = purchase?.remaining_bill || 0;
   return (
     <>
       <div className="w-full border-b border-slate-100 pb-6">
@@ -67,7 +84,9 @@ export default function HeaderPurchaeDetail({
             </span>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-2 w-full lg:w-auto min-w-70">
+        <div
+          className={`grid ${remainingBill > 0 ? "grid-cols-2" : "grid-cols-1"} gap-2 w-full lg:w-auto min-w-70`}
+        >
           <div className="w-full">
             <ButtonNav
               href={`/purchases/${purchase?.id}/edit`}
@@ -80,6 +99,34 @@ export default function HeaderPurchaeDetail({
               Edit
             </ButtonNav>
           </div>
+          {remainingBill > 0 && (
+            <div className="w-full">
+              <ButtonNav
+                onClick={() => {
+                  setIsModalPaymentOpen(true);
+                }}
+                className="justify-center px-3 py-2 text-xs font-semibold rounded-xl"
+                icon={<CreditCard className="w-3.5 h-3.5" />}
+                iconPosition="left"
+                fullWidth={false}
+              >
+                Add Payment
+              </ButtonNav>
+              <BaseModal
+                title="Supplier Payment"
+                isOpen={isModalPaymentOpen}
+                onClose={handlePaymentCancel}
+                size="md"
+              >
+                <SupplierPaymentForm
+                  onSuccess={handlePaymentSuccess}
+                  onCancel={handlePaymentCancel}
+                  amount={remainingBill}
+                  supplierId={purchase?.supplier_id}
+                />
+              </BaseModal>
+            </div>
+          )}
         </div>
       </div>
     </>

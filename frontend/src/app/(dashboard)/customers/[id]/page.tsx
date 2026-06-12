@@ -1,25 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import {  useParams } from "next/navigation";
 import { CustomerService } from "@/services/customerService";
 import { Customer } from "@/types/customer";
 import { toast } from "sonner";
 import axios from "axios";
-import { formatDate, formatRupiah } from "@/utils/helper";
+import {  formatRupiah } from "@/utils/helper";
 import {
-  ArrowLeft,
+  
   Clock,
-  FilePen,
   FileText,
   DollarSign,
-  Calendar,
 } from "lucide-react";
-import ButtonNav from "@/components/ui/button/ButtonNav";
 import StatsCard from "@/components/ui/card/StatsCard";
-import { CustomerPaymentForm } from "@/components/ui/form/CustomerPaymentForm";
-import { BaseModal } from "@/components/ui/modal/BaseModal";
-import DCBack from "../_components/detail/DCBack";
 import DCHeader from "../_components/detail/DCHeader";
 import DCInformation from "../_components/detail/DCInformation";
 import DCUnpaidTable from "../_components/detail/DCUnpaidTable";

@@ -1,46 +1,25 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React, { useState, useEffect, useSyncExternalStore } from "react";
-import { useRouter, useParams } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import axios from "axios";
 import { toast } from "sonner";
 import { ExpenseService } from "@/services/expenseService";
 import { Expense } from "@/types/expense";
-import { formatRupiah, formatDate } from "@/utils/helper";
+
 import { typeConfig } from "@/constants/config/TypeExpenseConfig";
 
-import {
-  ArrowLeft,
-  FilePen,
-  Calendar,
-  DollarSign,
-  User,
-  ShoppingBag,
-  FileText,
-  Clock,
-  Briefcase,
-} from "lucide-react";
-import ButtonNav from "@/components/ui/button/ButtonNav";
+import { FileText } from "lucide-react";
 import GlobalLoader from "@/components/ui/common/GlobalLoading";
 import HeaderExpenseDetail from "./_components/HeaderExpenseDetail";
 import BasicInfoExpenseDetail from "./_components/BasicInfoExpenseDetail";
 import AmountExpenseDetail from "./_components/AmountExpenseDetail";
 
-const emptySubscribe = () => () => {};
-
 export default function ExpenseDetailPage() {
-  const router = useRouter();
   const params = useParams();
   const id = params.id as string;
 
   const [expense, setExpense] = useState<Expense | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const isClient = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
 
   useEffect(() => {
     if (!id || id === "undefined") return;

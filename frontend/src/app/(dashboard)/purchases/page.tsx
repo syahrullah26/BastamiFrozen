@@ -1,35 +1,14 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useSyncExternalStore,
-} from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { PurchaseService } from "@/services/purchaseService";
 import { Purchase, PurchaseStats, BatchStatus } from "@/types/purchase";
 import { StatusFilter } from "@/types/sale";
-import ButtonNav from "@/components/ui/button/ButtonNav";
-import {
-  Plus,
-  Search,
-  Clock,
-  Calendar,
-  Receipt,
-  DollarSign,
-  DollarSignIcon,
-} from "lucide-react";
 import TableData from "@/components/ui/Table/TableData";
-import StatsCard from "@/components/ui/card/StatsCard";
 import ConfirmModal from "@/components/ui/modal/ConfirmModal";
 import { PurchaseColumns } from "@/constants/DataTable/purchaseData";
-import { formatRupiah } from "@/utils/helper";
-import { BaseModal } from "@/components/ui/modal/BaseModal";
-import { PurchaseForm } from "@/components/ui/form/PurchaseForm";
-import { SupplierPaymentForm } from "@/components/ui/form/SupplierPaymentForm";
 import { useStatusFilter } from "@/hooks/useStatusFilter";
 import { FILTER_TABS_CONFIG } from "@/constants/Filter/StatusFilterConfig";
 import { useBatchFilter } from "@/hooks/useBatchFilter";
@@ -38,8 +17,6 @@ import PurchaseHeader from "./_components/PurchaseHeader";
 import PurchaseStatsCard from "./_components/PurchaseStatsCard";
 import PurchaseFilter from "./_components/PurchaseFilter";
 import PurchaseActiveTab from "./_components/PurchaseActiveTab";
-
-const emptySubscribe = () => () => {};
 
 export default function Purchases() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -79,12 +56,6 @@ export default function Purchases() {
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-
-  const isClient = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
 
   const loadData = useCallback(
     async (
@@ -148,20 +119,20 @@ export default function Purchases() {
     };
   }, [loadData, currentPage, activeTab, startDate, endDate, activeBatchTab]);
 
-  const handleTabChange = (status: StatusFilter) => {
-    setActiveTab(status);
-    setCurrentPage(1);
-  };
+  // const handleTabChange = (status: StatusFilter) => {
+  //   setActiveTab(status);
+  //   setCurrentPage(1);
+  // };
 
-  const handleBatchTabChange = (status: BatchStatus) => {
-    setActiveBatchTab(status);
-    setCurrentPage(1);
-  };
+  // const handleBatchTabChange = (status: BatchStatus) => {
+  //   setActiveBatchTab(status);
+  //   setCurrentPage(1);
+  // };
 
   const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => setIsModalOpen(false);
+  // const handleCloseModal = () => setIsModalOpen(false);
   const handleOpenPaymentModal = () => setIsModalPaymentOpen(true);
-  const handleClosePaymentModal = () => setIsModalPaymentOpen(false);
+  // const handleClosePaymentModal = () => setIsModalPaymentOpen(false);
 
   const handleSuccess = () =>
     loadData(currentPage, activeTab, startDate, endDate, activeBatchTab);

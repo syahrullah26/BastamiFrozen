@@ -16,18 +16,7 @@ import {
   SupplierPaymentStats,
 } from "@/types/payment";
 import { PaymentService } from "@/services/paymentService";
-import ButtonNav from "@/components/ui/button/ButtonNav";
-import {
-  Plus,
-  Search,
-  Users,
-  DollarSign,
-  ArrowDownLeft,
-  ArrowUpRight,
-  TrendingUp,
-} from "lucide-react";
 import TableData from "@/components/ui/Table/TableData";
-import StatsCard from "@/components/ui/card/StatsCard";
 import ConfirmModal from "@/components/ui/modal/ConfirmModal";
 import { formatRupiah } from "@/utils/helper";
 import { BaseModal } from "@/components/ui/modal/BaseModal";
