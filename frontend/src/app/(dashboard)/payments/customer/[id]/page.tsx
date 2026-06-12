@@ -5,9 +5,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { PaymentService } from "@/services/paymentService";
 import { CustomerPayment } from "@/types/payment";
-import {
-  ArrowLeft,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import HeaderCustomerPayment from "./_components/HeaderCustomerPayment";
 import BasicInfoCustomer from "./_components/BasicInfoCustomerPayment";
 import LogsCustomerPayment from "./_components/LogsCustomerPayment";
@@ -22,7 +20,7 @@ export default function CustomerPaymentDetailPage() {
 
   const [payment, setPayment] = useState<CustomerPayment | null>(null);
   const [loading, setLoading] = useState(false);
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
   useEffect(() => {
     if (!id || id === "undefined") return;
     const fetchPayment = async () => {
@@ -42,6 +40,12 @@ export default function CustomerPaymentDetailPage() {
     };
     fetchPayment();
   }, [id]);
+
+  const handleSuccessRemainingPayment = () => {
+    setIsModalOpen(false);
+    router.push(`/customers/${payment?.customer?.id}`);
+  };
+  const handleCloseModal = () => setIsModalOpen(false);
 
   if (loading) {
     return (
@@ -89,6 +93,10 @@ export default function CustomerPaymentDetailPage() {
             payment={payment}
             paymentPercentage={paymentPercentage}
             totalOrderEstimate={totalOrderEstimate}
+            isModalOpen={isModalOpen}
+            setIsModalOpen={setIsModalOpen}
+            onSuccess={handleSuccessRemainingPayment}
+            onCancel={handleCloseModal}
           />
           <MapsCustomerPaymentProps payment={payment} />
           <AuditFilesCustomerPayment id={payment.customer?.id} />

@@ -5,17 +5,27 @@ import { SupplierPayment } from "@/types/payment";
 import { formatRupiah } from "@/utils/helper";
 import { toast } from "sonner";
 import { CreditCard } from "lucide-react";
+import { BaseModal } from "@/components/ui/modal/BaseModal";
+import { SupplierPaymentForm } from "@/components/ui/form/SupplierPaymentForm";
 
 interface RemainingBillSupplierPaymentProps {
   payment: SupplierPayment | null;
   paymentPercentage: number;
   totalOrderEstimate: number;
+  isModalOpen: boolean;
+  setIsModalOpen: (value: boolean) => void;
+  onSuccess: () => void;
+  onCancel: () => void;
 }
 
 export default function RemainingBillSupplierPayment({
   payment,
   paymentPercentage,
   totalOrderEstimate,
+  isModalOpen,
+  setIsModalOpen,
+  onSuccess,
+  onCancel,
 }: RemainingBillSupplierPaymentProps) {
   if (!payment) return null;
   return (
@@ -47,13 +57,24 @@ export default function RemainingBillSupplierPayment({
       </div>
 
       <button
-        onClick={() =>
-          toast.success("Navigating to records management framework")
-        }
-        className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all cursor-pointer"
+        onClick={() => setIsModalOpen(true)}
+        className={`w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all ${payment.supplier.remaining_bill === 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+        disabled={payment.supplier.remaining_bill === 0}
       >
         <CreditCard className="w-4 h-4" /> Pay Remaining Balance
       </button>
+      <BaseModal
+        title="Pay Remaining Balance"
+        isOpen={isModalOpen}
+        onClose={onCancel}
+      >
+        <SupplierPaymentForm
+          onSuccess={onSuccess}
+          onCancel={onCancel}
+          supplierId={payment.supplier.id}
+          amount={payment.supplier.remaining_bill}
+        />
+      </BaseModal>
     </div>
   );
 }

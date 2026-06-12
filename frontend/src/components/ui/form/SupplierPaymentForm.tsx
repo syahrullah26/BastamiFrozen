@@ -68,7 +68,7 @@ export const SupplierPaymentForm = ({
       setSubmitting(true);
       await PaymentService.createSupplierPayment(formData);
       toast.success("Supplier payment successful", {
-        description: "Supplier has been paid successfully.",
+        description: `Supplier has been paid ${formatRupiah(formData.amount)} successfully.`,
       });
       onSuccess();
       onCancel();

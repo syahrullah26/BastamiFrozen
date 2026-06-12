@@ -5,17 +5,27 @@ import { CustomerPayment } from "@/types/payment";
 import { formatRupiah } from "@/utils/helper";
 import { toast } from "sonner";
 import { CreditCard } from "lucide-react";
+import { BaseModal } from "@/components/ui/modal/BaseModal";
+import { CustomerPaymentForm } from "@/components/ui/form/CustomerPaymentForm";
 
 interface RemainingBillCustomerPaymentProps {
   payment: CustomerPayment | null;
   paymentPercentage: number;
   totalOrderEstimate: number;
+  isModalOpen: boolean;
+  setIsModalOpen: (value: boolean) => void;
+  onSuccess: () => void;
+  onCancel: () => void;
 }
 
 export default function RemainingBillCustomerPayment({
   payment,
   paymentPercentage,
   totalOrderEstimate,
+  isModalOpen,
+  setIsModalOpen,
+  onSuccess,
+  onCancel,
 }: RemainingBillCustomerPaymentProps) {
   if (!payment) return null;
   return (
@@ -45,11 +55,25 @@ export default function RemainingBillCustomerPayment({
       </div>
 
       <button
-        onClick={() => toast.success("Record management framework triggered")}
-        className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-primary-brand bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all cursor-pointer"
+        onClick={() => setIsModalOpen(true)}
+        className={`w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-primary-brand bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all ${payment.customer.remaining_bill === 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+        disabled={payment.customer.remaining_bill === 0}
       >
         <CreditCard className="w-4 h-4" /> Record Remaining Payment
       </button>
+      <BaseModal
+        title="Remaining Payment"
+        isOpen={isModalOpen}
+        onClose={onCancel}
+        size="md"
+      >
+        <CustomerPaymentForm
+          onSuccess={onSuccess}
+          onCancel={onCancel}
+          customerId={payment.customer?.id}
+          amount={payment.customer?.remaining_bill}
+        />
+      </BaseModal>
     </div>
   );
 }

@@ -80,7 +80,7 @@ export const CustomerPaymentForm = ({
       setSubmitting(true);
       await PaymentService.createCustomerPayment(payload);
       toast.success("Customer payment successful", {
-        description: "Customer has been Pay successfully.",
+        description: `Customer has been Pay ${formatRupiah(payload.amount)}, successfully.`,
       });
       onSuccess();
       onCancel();

@@ -5,9 +5,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { PaymentService } from "@/services/paymentService";
 import { SupplierPayment } from "@/types/payment";
-import {
-  ArrowLeft,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import HeaderSupplierPayment from "./_components/HeaderSupplierPaymentDetail";
 import BasicInfoSupplier from "./_components/BasicInfoSupplierPayment";
 import RemainingBillSupplierPayment from "./_components/RemainingBillSupplierPayment";
@@ -21,6 +19,7 @@ export default function SupplierPaymentDetailPage() {
   const id = params?.id as string;
   const [payment, setPayment] = useState<SupplierPayment | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!id || id === "undefined") return;
@@ -41,6 +40,14 @@ export default function SupplierPaymentDetailPage() {
     };
     fetchPayment();
   }, [id]);
+
+  const handleSuccess = () => {
+    setIsModalOpen(false);
+    router.push(`/suppliers/${payment?.supplier?.id}`);
+  };
+  const handleCancel = () => {
+    setIsModalOpen(false);
+  };
 
   if (loading) {
     return (
@@ -88,6 +95,10 @@ export default function SupplierPaymentDetailPage() {
             payment={payment}
             paymentPercentage={paymentPercentage}
             totalOrderEstimate={totalOrderEstimate}
+            isModalOpen={isModalOpen}
+            setIsModalOpen={setIsModalOpen}
+            onSuccess={handleSuccess}
+            onCancel={handleCancel}
           />
           <MapsSupplierPaymentProps payment={payment} />
           <AuditFilesSupplierPayment id={payment?.supplier?.id} />
