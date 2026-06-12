@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState } from "react";
@@ -15,17 +16,30 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+    const trimmedUsername = username.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedUsername || !trimmedPassword) {
+      toast.error("Username and password are required.");
+      return;
+    }
+
     setLoading(true);
+
     try {
       await AuthService.login({
-        username,
-        password,
+        username: trimmedUsername,
+        password: trimmedPassword,
       });
-      toast.success("Login Berhasil");
+
+      toast.success("Login successful! Redirecting...");
       router.push("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       const errorMessage =
-        error instanceof Error ? error.message : "Login Failed";
+        error?.response?.data?.message ||
+        error?.message ||
+        "Login failed. Please check your credentials.";
       toast.error(errorMessage);
     } finally {
       setLoading(false);

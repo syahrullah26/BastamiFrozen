@@ -28,11 +28,19 @@ export default function CustomerPaymentDetailPage() {
         setLoading(true);
         const data = await PaymentService.getCustomerPayment(Number(id));
         setPayment(data);
+        
       } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-          return;
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 401) return;
+          const errorData = error.response?.data as
+            | { status: boolean; message: string }
+            | undefined;
+          const errorMessage =
+            errorData?.message || "Failed to load payment data";
+
+          toast.error(errorMessage);
         } else {
-          toast.error("Failed to load payment data");
+          toast.error("An unexpected error occurred");
         }
       } finally {
         setLoading(false);
