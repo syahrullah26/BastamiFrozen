@@ -106,10 +106,12 @@ export const CustomerPaymentForm = ({
               label="Customer"
               placeholder="Select Customer"
               searchPlaceholder="Search Customer..."
-              options={customer.map((cust) => ({
-                id: cust.id,
-                name: cust.name,
-              }))}
+              options={customer
+                .filter((cust) => Number(cust.remaining_bill || 0) > 0)
+                .map((cust) => ({
+                  id: cust.id,
+                  name: cust.name,
+                }))}
               value={formData.customer_id}
               onChange={(value) =>
                 setFormData((prev) => ({

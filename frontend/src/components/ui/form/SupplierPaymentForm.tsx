@@ -92,7 +92,12 @@ export const SupplierPaymentForm = ({
               label="Supplier"
               placeholder="Select Supplier"
               searchPlaceholder="Search Supplier..."
-              options={supplier.map((sup) => ({ id: sup.id, name: sup.name }))}
+              options={supplier
+                .filter((supp) => Number(supp.remaining_bill || 0) > 0)
+                .map((sup) => ({
+                  id: sup.id,
+                  name: sup.name,
+                }))}
               value={formData.supplier_id}
               onChange={(value) =>
                 setFormData((prev) => ({ ...prev, supplier_id: Number(value) }))
