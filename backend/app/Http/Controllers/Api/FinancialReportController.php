@@ -30,8 +30,6 @@ class FinancialReportController extends Controller
         } catch (\Exception $e) {
             $carbonDate = Carbon::now();
         }
-
-
         if ($type === 'daily') {
             $startDate = $carbonDate->startOfDay()->toDateTimeString();
             $endDate = $carbonDate->endOfDay()->toDateTimeString();
@@ -49,9 +47,9 @@ class FinancialReportController extends Controller
         $financialData = DB::table('sales')
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->selectRaw('
-        COUNT(id) as total_orders,
-        SUM(total_amount) as gross_revenue
-    ')
+            COUNT(id) as total_orders,
+            SUM(total_amount) as gross_revenue
+        ')
             ->first();
 
         $cogsData = DB::table('sales')
@@ -60,19 +58,14 @@ class FinancialReportController extends Controller
             ->whereBetween('sales.transaction_date', [$startDate, $endDate])
             ->selectRaw('SUM((sale_items.quantity * product_units.conversion_factor) * sale_items.cost_price_at_sale) as total_cogs')
             ->first();
-
         $totalOrders  = (int) ($financialData->total_orders ?? 0);
         $grossRevenue = (float) ($financialData->gross_revenue ?? 0);
         $totalCogs    = (float) ($cogsData->total_cogs ?? 0);
 
-        // $totalOrders  = (int) ($financialData->total_orders ?? 0);
-        // $grossRevenue = (float) ($financialData->gross_revenue ?? 0);
-        // $totalCogs    = (float) ($financialData->total_cogs ?? 0);
         $grossProfit  = $grossRevenue - $totalCogs;
-
-
         $expensesBreakdown = DB::table('expenses')
             ->whereBetween('expense_date', [$startDate, $endDate])
+            ->where('type', '!=', 'pay_supplier')
             ->select('type', DB::raw('SUM(amount) as total'))
             ->groupBy('type')
             ->get()
@@ -85,16 +78,13 @@ class FinancialReportController extends Controller
 
         $totalExpenses = $expensesBreakdown->sum('total');
         $netProfitLoss = $grossProfit - $totalExpenses;
-
         $profitMargin = $grossRevenue > 0 ? ($netProfitLoss / $grossRevenue) * 100 : 0;
         $averageOrderValue = $totalOrders > 0 ? $grossRevenue / $totalOrders : 0;
-
         $chartData = [];
         if ($type === 'monthly') {
             $chartData = DB::table('sales')
-                ->leftJoin('sale_items', 'sales.id', '=', 'sale_items.sale_id')
-                ->whereBetween('sales.transaction_date', [$startDate, $endDate])
-                ->selectRaw('DATE(sales.transaction_date) as date, SUM(sale_items.subtotal) as revenue')
+                ->whereBetween('transaction_date', [$startDate, $endDate])
+                ->selectRaw('DATE(transaction_date) as date, SUM(total_amount) as revenue') // 🔥 Konsisten dengan total_amount di atas tanpa multiplicator join
                 ->groupBy('date')
                 ->orderBy('date', 'ASC')
                 ->get()
@@ -105,7 +95,6 @@ class FinancialReportController extends Controller
                     ];
                 });
         }
-
         return response()->json([
             'status' => true,
             'message' => 'Financial report fetched successfully',
@@ -127,7 +116,6 @@ class FinancialReportController extends Controller
             ]
         ]);
     }
-
 
     public function getDashboardData(Request $request)
     {

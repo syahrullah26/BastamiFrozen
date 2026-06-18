@@ -24,7 +24,7 @@ class UpdateRequest extends FormRequest
     {
         return [
             'name' => 'required | max:255 | string',
-            'salary' => 'required | number |min:0 ',
+            'salary' => 'required | numeric |min:0 ',
         ];
     }
 }

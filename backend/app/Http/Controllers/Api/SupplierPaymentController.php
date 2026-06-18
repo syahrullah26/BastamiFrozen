@@ -277,8 +277,70 @@ class SupplierPaymentController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
-        //
+        try {
+            DB::transaction(function () use ($id) {
+                $payment = SupplierPayment::with('expense')->findOrFail($id);
+                $supplierId = $payment->supplier_id;
+
+                $allPurchases = Purchase::where('supplier_id', $supplierId)->get();
+                foreach ($allPurchases as $purchase) {
+                    $originalAmount = $purchase->total_amount ?? $purchase->total_bill ?? 0;
+
+                    $purchase->update([
+                        'remaining_bill' => $originalAmount,
+                        'status'         => $originalAmount > 0 ? 'unpaid' : 'paid'
+                    ]);
+                }
+                $otherPayments = SupplierPayment::where('supplier_id', $supplierId)
+                    ->where('id', '!=', $id)
+                    ->get();
+
+                $totalMoneyToAllocate = $otherPayments->sum('amount');
+                if ($totalMoneyToAllocate > 0) {
+                    $purchasesToPay = Purchase::where('supplier_id', $supplierId)
+                        ->where('remaining_bill', '>', 0)
+                        ->orderBy('id', 'asc')
+                        ->get();
+
+                    $moneyLeft = $totalMoneyToAllocate;
+                    foreach ($purchasesToPay as $purchase) {
+                        if ($moneyLeft <= 0) break;
+
+                        $currentRemainingBill = $purchase->remaining_bill;
+
+                        if ($moneyLeft >= $currentRemainingBill) {
+                            $moneyLeft -= $currentRemainingBill;
+                            $purchase->update([
+                                'remaining_bill' => 0,
+                                'status'         => 'paid'
+                            ]);
+                        } else {
+                            $purchase->update([
+                                'remaining_bill' => $currentRemainingBill - $moneyLeft,
+                                'status'         => 'unpaid'
+                            ]);
+                            $moneyLeft = 0;
+                        }
+                    }
+                }
+                if ($payment->expense) {
+                    $payment->expense->delete();
+                }
+
+                $payment->delete();
+            });
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Supplier Payment deleted, FIFO rolled back, and related expense removed successfully',
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['status' => false, 'message' => 'Data Pembayaran Tidak Ditemukan'], 404);
+        } catch (\Exception $e) {
+            Log::error('Destroy Supplier Payment FIFO Error: ' . $e->getMessage());
+            return response()->json(['status' => false, 'message' => 'Internal Server Error: ' . $e->getMessage()], 500);
+        }
     }
 }

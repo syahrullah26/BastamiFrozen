@@ -272,8 +272,66 @@ class CustomerPaymentController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
-        //
+        try {
+            DB::transaction(function () use ($id) {
+                $payment = CustomerPayment::findOrFail($id);
+                $customerID = $payment->customer_id;
+                $allSales = Sale::where('customer_id', $customerID)->get();
+                foreach ($allSales as $sale) {
+                    $originalAmount = $sale->total_amount ?? 0;
+
+                    $sale->update([
+                        'remaining_bill' => $originalAmount,
+                        'status'         => $originalAmount > 0 ? 'unpaid' : 'paid'
+                    ]);
+                }
+
+                $otherPayments = CustomerPayment::where('customer_id', $customerID)
+                    ->where('id', '!=', $id)
+                    ->get();
+
+                $totalMoneyToAllocate = $otherPayments->sum('amount');
+                if ($totalMoneyToAllocate > 0) {
+                    $salesToPay = Sale::where('customer_id', $customerID)
+                        ->where('remaining_bill', '>', 0)
+                        ->orderBy('id', 'asc')
+                        ->get();
+
+                    $moneyLeft = $totalMoneyToAllocate;
+                    foreach ($salesToPay as $sale) {
+                        if ($moneyLeft <= 0) break;
+
+                        $currentRemainingBill = $sale->remaining_bill;
+
+                        if ($moneyLeft >= $currentRemainingBill) {
+                            $moneyLeft -= $currentRemainingBill;
+                            $sale->update([
+                                'remaining_bill' => 0,
+                                'status'         => 'paid'
+                            ]);
+                        } else {
+                            $sale->update([
+                                'remaining_bill' => $currentRemainingBill - $moneyLeft,
+                                'status'         => 'unpaid'
+                            ]);
+                            $moneyLeft = 0;
+                        }
+                    }
+                }
+                $payment->delete();
+            });
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Customer Payment deleted and FIFO records rolled back successfully',
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['status' => false, 'message' => 'Data Pembayaran Tidak Ditemukan'], 404);
+        } catch (\Exception $e) {
+            Log::error('Destroy Customer Payment FIFO Error: ' . $e->getMessage());
+            return response()->json(['status' => false, 'message' => 'Internal Server Error: ' . $e->getMessage()], 500);
+        }
     }
 }

@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\SaleController;
 use App\Http\Controllers\Api\SupplierPaymentController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\FinancialReportController;
+use App\Http\Controllers\Api\QrcodeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,8 @@ Route::prefix('test')->group(function () {
 
     Route::get('/financial-report', [FinancialReportController::class, 'getProfitLossReport']);
     Route::get('/financial-report/dashboard', [FinancialReportController::class, 'getDashboardData']);
+
+    Route::get('/generate-qr', [QrcodeController::class, 'generateVoucherQrCode']);
 });
 
 
