@@ -13,6 +13,7 @@ import TopProductsTable from "./_components/TopProductsTable";
 import AgingReceivablesTable from "./_components/AgingReceivable";
 import GlobalLoader from "@/components/ui/common/GlobalLoading";
 import EmptyState from "@/components/ui/common/EmptyState";
+import QrCodeSimple from "@/components/qr/QrCode";
 
 type FilterType = "daily" | "weekly" | "monthly";
 
@@ -108,6 +109,10 @@ export default function DashboardPage() {
         <TopProductsTable products={top_products} />
         <AgingReceivablesTable receivables={aging_receivables} />
       </div>
+
+      {/* <div className="flex items-center justify-center mt-4 space-y-4">
+        <QrCodeSimple />
+      </div> */}
     </div>
   );
 }

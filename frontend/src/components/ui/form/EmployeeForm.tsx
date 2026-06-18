@@ -50,7 +50,7 @@ export const EmployeeForm = ({ onSuccess, onCancel }: EmployeeFormProps) => {
     >
       <div className="space-y-4">
         <h3 className="text-xs font-black uppercase tracking-wider text-brand-dar">
-          Customer Details
+          Employe Details
         </h3>
         <div className="grid grid-cols-1 gap-4 ">
           <FloatingInput

@@ -60,7 +60,7 @@ export default function HeaderEmployee({
         <BaseModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          title="Add Customer"
+          title="Add Employee"
           size="md"
         >
           <EmployeeForm onSuccess={handleSuccess} onCancel={handleCloseModal} />

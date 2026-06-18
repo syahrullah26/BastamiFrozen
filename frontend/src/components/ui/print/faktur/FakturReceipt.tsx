@@ -102,7 +102,7 @@ export const FakturReceipt = React.forwardRef<
       <div className="grid grid-cols-2 gap-6 pt-2 pb-2">
         <div className="text-[9px] self-start pt-0.5">
           <span className="inline-block border border-zinc-200 px-2 py-0.5 font-bold text-zinc-600 bg-zinc-50/20 rounded-sm">
-            STATUS: {data.status === "unpaid" ? "BELUM LUNAS" : "LUNAS"}
+            {data.status === "unpaid" ? "BELUM LUNAS" : "LUNAS"}
           </span>
         </div>
 

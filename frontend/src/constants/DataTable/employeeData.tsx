@@ -73,8 +73,8 @@ export const EmployeeColumns = (
             asChild
             className="cursor-pointer py-2 px-2.5 rounded-xl text-slate-700 font-semibold text-xs focus:bg-slate-50 transition-colors"
           >
-            <Link href={`/employee/${item.id}/edit`}>
-              <Pencil className="mr-2 h-4 w-4 text-slate-400" /> Edit Product
+            <Link href={`/employees/${item.id}/edit`}>
+              <Pencil className="mr-2 h-4 w-4 text-slate-400" /> Edit Employee
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-slate-100 my-1" />
