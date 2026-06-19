@@ -48,11 +48,13 @@ export const PurchaseColumns = (
           item.items.map((p) => {
             const isDepleted =
               p.remaining_qty === 0 || p.batch_status === "depleted";
-            const baseUnit = p.product?.units?.find(
-              (u: any) => Number(u.conversion_factor) === 1,
-            );
-            if (!baseUnit) return;
-            const smallestUnitName = baseUnit.unit_name;
+            const baseUnit = p.product?.units?.find((u: any) => {
+              return (
+                parseFloat(u.conversion_factor) === 1 ||
+                parseInt(u.conversion_factor, 10) === 1
+              );
+            });
+            const smallestUnitName = baseUnit?.unit_name || p.product_unit_name;
 
             return (
               <div
