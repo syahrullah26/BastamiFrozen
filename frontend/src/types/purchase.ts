@@ -13,6 +13,7 @@ export interface PurchaseItem {
   quantity: string;
   price: number;
   subtotal: number;
+  pricePerUnit: number;
   cost_price: number;
   remaining_qty: number;
   batch_status: string;
