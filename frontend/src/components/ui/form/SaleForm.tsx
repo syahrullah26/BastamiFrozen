@@ -23,6 +23,7 @@ interface FormItem {
   product_id: string;
   product_unit_id: string;
   quantity: number;
+  discount_amount?: number;
 }
 
 export const SaleForm = ({ onSucces, onCancel }: SaleFormProps) => {
@@ -34,7 +35,7 @@ export const SaleForm = ({ onSucces, onCancel }: SaleFormProps) => {
   const [transactionDate, setTransactionDate] = useState<string>("");
 
   const [items, setItems] = useState<FormItem[]>([
-    { product_id: "", product_unit_id: "", quantity: 1 },
+    { product_id: "", product_unit_id: "", quantity: 1, discount_amount: 0 },
   ]);
 
   useEffect(() => {
@@ -58,7 +59,10 @@ export const SaleForm = ({ onSucces, onCancel }: SaleFormProps) => {
   }, []);
 
   const handleAddItem = () => {
-    setItems([...items, { product_id: "", product_unit_id: "", quantity: 1 }]);
+    setItems([
+      ...items,
+      { product_id: "", product_unit_id: "", quantity: 1, discount_amount: 0 },
+    ]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -92,6 +96,11 @@ export const SaleForm = ({ onSucces, onCancel }: SaleFormProps) => {
         ...updatedItems[index],
         quantity: Number(value),
       };
+    } else if (field === "discount_amount") {
+      updatedItems[index] = {
+        ...updatedItems[index],
+        discount_amount: Number(value),
+      };
     }
 
     setItems(updatedItems);
@@ -119,6 +128,7 @@ export const SaleForm = ({ onSucces, onCancel }: SaleFormProps) => {
         product_id: Number(item.product_id),
         product_unit_id: Number(item.product_unit_id),
         quantity: item.quantity,
+        discount_amount: item.discount_amount,
       })),
     };
 
@@ -235,6 +245,17 @@ export const SaleForm = ({ onSucces, onCancel }: SaleFormProps) => {
                       handleItemChange(index, "quantity", e.target.value)
                     }
                     required
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <FloatingInput
+                    label="Discount"
+                    type="number"
+                    min={0}
+                    value={item.discount_amount}
+                    onChange={(e) =>
+                      handleItemChange(index, "discount_amount", e.target.value)
+                    }
                   />
                 </div>
 

@@ -40,6 +40,7 @@ export interface SaleItemRequest {
   product_id: number;
   product_unit_id: number;
   quantity: number;
+  discount_amount?: number;
 }
 export interface SaleRequest {
   customer_id: number;
