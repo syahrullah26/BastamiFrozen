@@ -74,7 +74,7 @@ export const PurchaseColumns = (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-zinc-100 font-mono text-[10px] font-bold text-zinc-600 rounded-md border border-zinc-200/40 shrink-0">
                       <span>x{p.quantity}</span>
                       <span className="font-sans text-[9px] text-zinc-400 uppercase tracking-wider font-semibold">
-                        {p.unit_name}
+                        {p.product_unit_name}
                       </span>
                     </span>
                   </div>
@@ -83,7 +83,7 @@ export const PurchaseColumns = (
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-zinc-400">Price</span>
                       <span className="font-medium text-zinc-700">
-                        {formatRupiah(Number(p.price))}
+                        {formatRupiah(Number(p.pricePerUnit))}
                       </span>
                     </div>
 
@@ -91,6 +91,13 @@ export const PurchaseColumns = (
                       <span className="text-zinc-400">Subtotal</span>
                       <span className="font-mono font-bold text-brand-dark">
                         {formatRupiah(Number(p.subtotal))}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] pb-1.5 border-b border-zinc-200/40  bg-zinc-100 font-medium">
+                      <span className="text-zinc-400">HPP</span>
+                      <span className="font-mono font-bold text-brand-dark">
+                        {formatRupiah(Number(p.price))}/{smallestUnitName}
                       </span>
                     </div>
 
