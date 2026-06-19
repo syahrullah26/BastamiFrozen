@@ -29,10 +29,10 @@ export const FakturReceipt = React.forwardRef<
               Penyedia Produk Frozen Food Berkualitas
             </p>
             <p className="text-[9px] text-zinc-500 font-medium">
-              Jl. Kp. Karang Kitri No.43-4, RT.005/RW.009, Margahayu, Kec.
+              Jl. Kp. Karang Kitri No.9, RT.005/RW.009, Margahayu, Kec.
               Bekasi Tim., Kota Bks, Jawa Barat 17113
             </p>
-            <p className="text-[9px] text-zinc-400">Telp: 0812-3456-7890</p>
+            <p className="text-[9px] text-zinc-400">Telp: 0812-8440-4606</p>
           </div>
         </div>
 

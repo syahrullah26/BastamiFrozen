@@ -57,7 +57,7 @@ export default function HeaderSales({
           >
             Add Sales
           </ButtonNav>
-          <ButtonNav
+          {/* <ButtonNav
             onClick={handleOpenPaymentModal}
             icon={<DollarSignIcon className="w-4 h-4" />}
             iconPosition="left"
@@ -65,7 +65,7 @@ export default function HeaderSales({
             fullWidth={false}
           >
             Payment
-          </ButtonNav>
+          </ButtonNav> */}
         </div>
         <BaseModal
           isOpen={isModalOpen}
@@ -75,7 +75,7 @@ export default function HeaderSales({
         >
           <SaleForm onSucces={handleSuccess} onCancel={handleCloseModal} />
         </BaseModal>
-        <BaseModal
+        {/* <BaseModal
           isOpen={isPaymentModalOpen}
           onClose={handleClosePaymentModal}
           title="Add Customer Payment"
@@ -85,7 +85,7 @@ export default function HeaderSales({
             onSuccess={handleSuccess}
             onCancel={handleClosePaymentModal}
           />
-        </BaseModal>
+        </BaseModal> */}
       </div>
     </>
   );

@@ -25,7 +25,7 @@ export default function HeaderPayment({
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <ButtonNav
+          {/* <ButtonNav
             onClick={() => setShowCustomerModal(true)}
             icon={<Plus className="w-4 h-4" />}
           >
@@ -37,7 +37,7 @@ export default function HeaderPayment({
             variant="secondary"
           >
             New Supplier Payment
-          </ButtonNav>
+          </ButtonNav> */}
         </div>
       </div>
     </>

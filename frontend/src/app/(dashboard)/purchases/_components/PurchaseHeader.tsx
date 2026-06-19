@@ -60,7 +60,7 @@ export default function PurchaseHeader({
           >
             Add Purchases
           </ButtonNav>
-          <ButtonNav
+          {/* <ButtonNav
             onClick={handleOpenPaymentModal}
             icon={<DollarSignIcon className="w-4 h-4" />}
             iconPosition="left"
@@ -68,7 +68,7 @@ export default function PurchaseHeader({
             fullWidth={false}
           >
             Payment
-          </ButtonNav>
+          </ButtonNav> */}
         </div>
       </div>
 
@@ -80,7 +80,7 @@ export default function PurchaseHeader({
       >
         <PurchaseForm onSuccess={handleSuccess} onCancel={handleCloseModal} />
       </BaseModal>
-      <BaseModal
+      {/* <BaseModal
         isOpen={isModalPaymentOpen}
         onClose={handleClosePaymentModal}
         title="Pay Suppliers"
@@ -90,7 +90,7 @@ export default function PurchaseHeader({
           onSuccess={handlePaymentSuccess}
           onCancel={handleClosePaymentModal}
         />
-      </BaseModal>
+      </BaseModal> */}
     </>
   );
 }
