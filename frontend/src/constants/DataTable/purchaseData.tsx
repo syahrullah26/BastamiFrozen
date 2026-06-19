@@ -74,7 +74,7 @@ export const PurchaseColumns = (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-zinc-100 font-mono text-[10px] font-bold text-zinc-600 rounded-md border border-zinc-200/40 shrink-0">
                       <span>x{p.quantity}</span>
                       <span className="font-sans text-[9px] text-zinc-400 uppercase tracking-wider font-semibold">
-                        {smallestUnitName}
+                        {p.unit_name}
                       </span>
                     </span>
                   </div>

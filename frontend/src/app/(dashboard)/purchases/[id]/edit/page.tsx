@@ -80,7 +80,7 @@ export default function PurchaseUpdatePage() {
             product_id: item.product_id.toString(),
             product_unit_id: item.product_unit_id.toString(),
             quantity: item.quantity,
-            price: Number(item.price),
+            price: Number(item.cost_price),
           })),
         );
       } catch (error) {
