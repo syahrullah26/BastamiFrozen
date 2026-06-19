@@ -197,7 +197,7 @@ export const SaleForm = ({ onSucces, onCancel }: SaleFormProps) => {
             return (
               <div
                 key={index}
-                className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-zinc-50/50 p-3 rounded-xl border border-zinc-100 relative group"
+                className="grid grid-cols-1 md:grid-cols-15 gap-3 items-end bg-zinc-50/50 p-3 rounded-xl border border-zinc-100 relative group"
               >
                 <div className="md:col-span-5">
                   <SearchableSelect

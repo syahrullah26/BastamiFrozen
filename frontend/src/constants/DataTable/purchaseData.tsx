@@ -51,9 +51,8 @@ export const PurchaseColumns = (
             const baseUnit = p.product?.units?.find(
               (u: any) => Number(u.conversion_factor) === 1,
             );
-            const smallestUnitName = baseUnit
-              ? baseUnit.unit_name
-              : p.product_unit_name;
+            if (!baseUnit) return;
+            const smallestUnitName = baseUnit.unit_name;
 
             return (
               <div

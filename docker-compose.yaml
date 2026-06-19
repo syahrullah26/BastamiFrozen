@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  app_backend:
+    image: php:8.2-fpm-alpine
+    container_name: bastami_backend
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www 
+    command: sh -c "docker-php-ext-install pdo_mysql && php-fpm"
+    networks:
+      - bastami_network
+
+
+  webserver:
+    image: nginx:alpine
+    container_name: bastami_webserver
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www
+      - ./nginx/laravel.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - bastami_network
+    depends_on:
+      - app_backend
+
+  db:
+    image: mysql:8.0
+    container_name: bastami_db
+    restart: unless-stopped
+    ports:
+      - "3306:3306" 
+    environment:
+      MYSQL_DATABASE: db_bastami
+      MYSQL_ROOT_PASSWORD: bastamifrozen
+    volumes:
+      - bastami_db_data:/var/lib/mysql
+    networks:
+      - bastami_network
+
+  app_frontend:
+    image: node:18-alpine
+    container_name: bastami_frontend
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app 
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev"
+    networks:
+      - bastami_network
+    depends_on:
+      - webserver
+
+networks:
+  bastami_network:
+    driver: bridge
+
+volumes:
+  bastami_db_data:
+    driver: local
