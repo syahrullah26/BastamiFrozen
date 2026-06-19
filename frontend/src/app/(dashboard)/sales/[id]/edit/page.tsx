@@ -76,6 +76,7 @@ export default function SaleUpdatePage() {
             product_id: item.product_id.toString(),
             product_unit_id: item.product_unit_id.toString(),
             quantity: item.quantity,
+
             discount_amount: 0,
           })),
         );
@@ -327,7 +328,7 @@ export default function SaleUpdatePage() {
                     <FloatingInput
                       label="Discount"
                       type="number"
-                      min="1"
+                      min="0"
                       value={isClient ? item.discount_amount : 0}
                       onChange={(e) =>
                         handleItemChange(
