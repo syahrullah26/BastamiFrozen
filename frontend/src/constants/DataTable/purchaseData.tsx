@@ -83,10 +83,7 @@ export const PurchaseColumns = (
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-zinc-400">Price</span>
                       <span className="font-medium text-zinc-700 font-mono">
-                        {formatRupiah(Number(p.pricePerUnit))}/
-                        <span className="text-sm lowercase">
-                          {p.product_unit_name}
-                        </span>
+                        {formatRupiah(Number(p.pricePerUnit))}
                       </span>
                     </div>
 
