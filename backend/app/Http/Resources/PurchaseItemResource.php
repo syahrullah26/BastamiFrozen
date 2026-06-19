@@ -28,7 +28,7 @@ class PurchaseItemResource extends JsonResource
             'price'             => (float) $this->price,
             'subtotal'          => (float) $this->subtotal,
 
-            'cost_price'        => (int) $this->price * $this->ProductUnit->conversion_factor,
+            'cost_price'        => (int) $this->price / $this->quantity,
             'remaining_qty'     => (int) $this->remaining_qty,
             'batch_status'      => $this->remaining_qty <= 0 ? 'habis' : 'tersedia',
             'product'           => new ProductResource($this->whenLoaded('Product')),
