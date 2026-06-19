@@ -20,6 +20,7 @@ interface FormItem {
   product_id: string;
   product_unit_id: string;
   quantity: number;
+  discount_amount?: number;
 }
 
 const emptySubscribe = () => () => {};
@@ -42,6 +43,7 @@ export default function SaleUpdatePage() {
       product_id: "",
       product_unit_id: "",
       quantity: 1,
+      discount_amount: 0,
     },
   ]);
 
@@ -74,6 +76,7 @@ export default function SaleUpdatePage() {
             product_id: item.product_id.toString(),
             product_unit_id: item.product_unit_id.toString(),
             quantity: item.quantity,
+            discount_amount: 0,
           })),
         );
       } catch (error) {
@@ -87,7 +90,10 @@ export default function SaleUpdatePage() {
   }, [id]);
 
   const handleAddItem = () => {
-    setItems([...items, { product_id: "", product_unit_id: "", quantity: 1 }]);
+    setItems([
+      ...items,
+      { product_id: "", product_unit_id: "", quantity: 1, discount_amount: 0 },
+    ]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -120,6 +126,11 @@ export default function SaleUpdatePage() {
       updatedItems[index] = {
         ...updatedItems[index],
         quantity: Number(value),
+      };
+    } else if (field === "discount_amount") {
+      updatedItems[index] = {
+        ...updatedItems[index],
+        discount_amount: Number(value),
       };
     }
 
@@ -156,6 +167,7 @@ export default function SaleUpdatePage() {
           product_id: Number(item.product_id),
           product_unit_id: Number(item.product_unit_id),
           quantity: item.quantity,
+          discount_amount: item.discount_amount,
         })),
       };
 
@@ -255,7 +267,7 @@ export default function SaleUpdatePage() {
               return (
                 <div
                   key={index}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3.5 rounded-xl border border-zinc-100 bg-zinc-50/20 items-end"
+                  className="grid grid-cols-1 md:grid-cols-17 gap-3 p-3.5 rounded-xl border border-zinc-100 bg-zinc-50/20 items-end"
                 >
                   <div className="md:col-span-5 flex flex-col gap-1">
                     <SearchableSelect
@@ -307,6 +319,22 @@ export default function SaleUpdatePage() {
                       value={isClient ? item.quantity : 1}
                       onChange={(e) =>
                         handleItemChange(index, "quantity", e.target.value)
+                      }
+                      className="w-full text-xs font-semibold font-mono text-zinc-800 bg-white border border-zinc-200 rounded-lg px-2.5 py-2 focus:outline-none focus:border-zinc-400"
+                    />
+                  </div>
+                  <div className="md:col-span-3 flex flex-col gap-1">
+                    <FloatingInput
+                      label="Discount"
+                      type="number"
+                      min="1"
+                      value={isClient ? item.discount_amount : 0}
+                      onChange={(e) =>
+                        handleItemChange(
+                          index,
+                          "discount_amount",
+                          e.target.value,
+                        )
                       }
                       className="w-full text-xs font-semibold font-mono text-zinc-800 bg-white border border-zinc-200 rounded-lg px-2.5 py-2 focus:outline-none focus:border-zinc-400"
                     />
