@@ -117,6 +117,7 @@ class SaleController extends Controller
 
                 $totalAmount = 0;
 
+
                 foreach ($validated['items'] as $item) {
                     $productUnit = ProductUnit::findOrFail($item['product_unit_id']);
                     $qtyNeededInBaseUnit = $item['quantity'] * $productUnit->conversion_factor;
@@ -158,14 +159,25 @@ class SaleController extends Controller
 
                     $costPriceAtSale = $totalCostForThisItem / $qtyNeededInBaseUnit;
 
-                    $sale->SaleItem()->create([
-                        'product_id'         => $item['product_id'],
-                        'product_unit_id'    => $item['product_unit_id'],
-                        'quantity'           => $item['quantity'],
-                        'price'              => $productUnit->price,
-                        'cost_price_at_sale' => $costPriceAtSale,
-                        'subtotal'           => $subtotalItem
-                    ]);
+                    if ($item['discount_amount'] > 0) {
+
+                        $sale->SaleItem()->create([
+                            'product_id'         => $item['product_id'],
+                            'product_unit_id'    => $item['product_unit_id'],
+                            'quantity'           => $item['quantity'],
+                            'price'              => $item['discount_amount'],
+                            'cost_price_at_sale' => $costPriceAtSale,
+                            'subtotal'           => $subtotalItem
+                        ]);
+                    }
+                        $sale->SaleItem()->create([
+                            'product_id'         => $item['product_id'],
+                            'product_unit_id'    => $item['product_unit_id'],
+                            'quantity'           => $item['quantity'],
+                            'price'              => $productUnit->price,
+                            'cost_price_at_sale' => $costPriceAtSale,
+                            'subtotal'           => $subtotalItem
+                        ]);
 
                     $product->update([
                         'stock' => $product->stock - $qtyNeededInBaseUnit
