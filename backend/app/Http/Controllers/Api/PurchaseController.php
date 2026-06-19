@@ -31,7 +31,8 @@ class PurchaseController extends Controller
                 'Supplier',
                 'PurchaseItem',
                 'PurchaseItem.Product',
-                'PurchaseItem.ProductUnit'
+                'PurchaseItem.ProductUnit',
+                'PurchaseItem.Product.ProductUnit'
             ]);
 
             $baseQuery->when($request->filled('status') && $request->status !== 'all', function ($q) use ($request) {
